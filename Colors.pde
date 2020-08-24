@@ -1,0 +1,10 @@
+color blue = color(0, 0, 255);                                                                               //задание цветовых констант
+color red = color(255, 0, 0);
+color green = color(0, 255, 0);
+color white = color(255, 255, 255);
+color black = color(0, 0, 0);
+color brick = color(150, 75, 0);
+color gray = color(185, 176, 176);
+color yellow = color(100, 255, 0);
+color negr= color(150, 75, 0);
+color euro= color(213, 172, 129);
