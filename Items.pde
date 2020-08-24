@@ -6,11 +6,11 @@ class Item implements cloneable {
   protected int stack;
   protected final int weight;
   public PImage sprite;
-  static final int MAT_STEEL=0, MAT_WOOD=1, MAT_STONE=2, MAT_COOPER=3;
+  static final int STEEL=0, WOOD=1, STONE=2, COOPER=3;
 
   Item (int id) {
     this.id=id;
-    this.name = getNameDatabase();
+    this.name = getItemNameDatabase(id);
     sprite= getSpriteDatabase();
     weight=1;
     stack=getStackDatabase();
@@ -23,34 +23,27 @@ class Item implements cloneable {
   public String getName() {
     return name;
   }
-  private String getNameDatabase() {
-    switch (id) {
-    case MAT_STEEL: 
-      return text_res_steel;
-    case MAT_WOOD: 
-      return text_res_wood;
-    case MAT_STONE: 
-      return text_res_stone;
-    default: 
-      return text_no_name;
-    }
-  }
+
   private PImage getSpriteDatabase() {
     switch (id) {
-    case MAT_STEEL: 
+    case STEEL: 
       return sprite_item_steel;
-    case MAT_WOOD: 
+    case WOOD: 
       return sprite_item_wood;
+    case COOPER: 
+      return sprite_item_cooper;
     default: 
       return none;
     }
   }
   private int getStackDatabase() {
     switch (id) {
-    case MAT_STEEL: 
+    case STEEL: 
       return 10;
-    case MAT_WOOD: 
+    case WOOD: 
       return 15;
+    case COOPER: 
+      return 10;
     default: 
       return 1;
     }
@@ -60,12 +53,12 @@ class Item implements cloneable {
 
 class ItemIntList extends IntList {
 
-  public String getNames() {
+  public String getNames() {  //сортирует по наименованию и возвращает список имен
     String names="";
     IntList inv = this.sortItem();
     for (int k=0; k<inv.size(); k++) {
       int i=inv.get(k);
-      names+=this.get(i)+" ("+this.calculationItem(i)+")";
+      names+=getItemNameDatabase(i)+" ("+this.calculationItem(i)+")";
       if (k!=inv.size()-1)
         names+=",\n";
     }
@@ -90,9 +83,24 @@ class ItemIntList extends IntList {
 }
 
 
+String getItemNameDatabase(int id) {
+  switch (id) {
+  case Item.STEEL: 
+    return text_res_steel;
+  case Item.WOOD: 
+    return text_res_wood;
+  case Item.COOPER: 
+    return text_res_cooper;
+  case Item.STONE: 
+    return text_res_stone;
+  default: 
+    return text_no_name;
+  }
+}
+
+
 
 class ItemList extends ArrayList <Item> {
-
 
   public IntList sortItem() { //сортирует и возвращает множество отсортированное
     IntList itemsList= new IntList(); 

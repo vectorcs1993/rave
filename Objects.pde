@@ -100,24 +100,9 @@ abstract class Object implements listened {
       return text_no_name;
     }
   }
-
-  public ItemIntList  getRecieptDatabase(int id) {
-    ItemIntList items = new ItemIntList();
-    switch (id) {
-    case WALL: 
-      for (int i=0; i<4; i++)
-        items.append(0);
-      break;
-    case MINER: 
-      for (int i=0; i<12; i++)
-        items.append(0);
-      break;
-    default:
-      items.append(0);
-    }
-    return items;
+  public ItemIntList  getRecieptDatabase() {
+    return null;
   }
-
   protected void delete() {
     world.currentRoom.node[x][y].solid=false;
   }
@@ -245,15 +230,21 @@ class Layer extends Object {
   protected PImage getSpriteDatabase() {
     if (material!=null) {
       switch (material.id) {
-      case Item.MAT_STEEL:
+      case Item.STEEL:
         return sprite_floor_steel;
-      case Item.MAT_WOOD:
+      case Item.WOOD:
         return sprite_floor_steel;
       default:
         return none;
       }
     } 
     return none;
+  }
+  public ItemIntList  getRecieptDatabase() {
+    ItemIntList resources = new ItemIntList();
+    for (int i=0; i<2; i++)
+      resources.append(Item.STEEL);
+    return resources;
   }
 }
 
@@ -265,15 +256,21 @@ class Wall extends Layer {
   protected PImage getSpriteDatabase() {
     if (material!=null) {
       switch (material.id) {
-      case Item.MAT_STEEL:
+      case Item.STEEL:
         return sprite_wall_steel;
-      case Item.MAT_WOOD:
+      case Item.WOOD:
         return sprite_wall_steel;
       default:
         return none;
       }
     } 
     return none;
+  }
+  public ItemIntList  getRecieptDatabase() {
+    ItemIntList resources = new ItemIntList();
+    for (int i=0; i<4; i++)
+      resources.append(Item.STEEL);
+    return resources;
   }
 }
 
@@ -379,9 +376,9 @@ class Storage extends Wall {
   }
   private int getCapacityDatabase() {
     switch (material.id) {
-    case Item.MAT_STEEL: 
+    case Item.STEEL: 
       return 60;
-    case Item.MAT_WOOD: 
+    case Item.WOOD: 
       return 40;
     default: 
       return 10;
@@ -413,9 +410,9 @@ class Storage extends Wall {
   protected PImage getSpriteDatabase() {
     if (material!=null) {
       switch (material.id) {
-      case Item.MAT_STEEL:
+      case Item.STEEL:
         return sprite_box_steel;
-      case Item.MAT_WOOD:
+      case Item.WOOD:
         return sprite_box_wood;
       default:
         return none;
@@ -444,12 +441,14 @@ class Storage extends Wall {
 
 class Miner extends Enviroment {
   int progress, progressMax;
+  Room.Sector sector;
 
   Miner (int id, int x, int y, int direction, int resource) {
     super(id, x, y, direction, resource);
     progress=0;
     progressMax=10;
     count=2;
+    sector=world.currentRoom.getSector(x, y);
   }
   protected int getTick() {
     return 50;
@@ -458,25 +457,28 @@ class Miner extends Enviroment {
     return fabrica;
   }
   private boolean isPlaceRersource() {
-    ArrayList <Object> objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
-    if (objects.isEmpty()) 
-      return true;
-    else {
-      Object current = objects.get(0);
-      if (current instanceof Storage) {
-        if (((Storage)current).isFreeCapacity())
-          return true;
-        else 
+    if (sector.count>0) {
+      ArrayList <Object> objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
+      if (objects.isEmpty()) 
+        return true;
+      else {
+        Object current = objects.get(0);
+        if (current instanceof Storage) {
+          if (((Storage)current).isFreeCapacity())
+            return true;
+          else 
+          return false;
+        } else if (current instanceof ItemMap) {
+          ItemMap itemMap = (ItemMap)current;
+          if (itemMap.item.id==resource.id && itemMap.count<=resource.stack-count) 
+            return true;
+          else 
+          return false;
+        } else 
         return false;
-      } else if (current instanceof ItemMap) {
-        ItemMap itemMap = (ItemMap)current;
-        if (itemMap.item.id==resource.id && itemMap.count<=resource.stack-count) 
-          return true;
-        else 
-        return false;
-      } else 
-      return false;
-    }
+      }
+    } else 
+    return false;
   }
 
   public void setDirectionNext() {
@@ -492,7 +494,9 @@ class Miner extends Enviroment {
     } else {
       progress=0;
       if (isPlaceRersource()) {
-        world.getRoomCurrent().addItemHere(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1], (Item)resource.clone(), count);
+        int newCount = constrain(count,1,sector.count);
+        world.getRoomCurrent().addItemHere(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1], (Item)resource.clone(), newCount);
+        sector.count-=newCount;
       }
     }
   }
@@ -502,21 +506,40 @@ class Miner extends Enviroment {
     drawStatus(9, progress, progressMax, yellow, red);
   }
   private String isPlaceFree() {
-    if (!isPlaceRersource())
+    if (!isPlaceRersource()) {
+      if (sector.count<=0)
+       return text_no_resources;
+      else
       return text_no_place_free;
-    else 
+    } else 
     return text_in_process;
   }
+  private String isResource() {
+     if (sector.count>0)
+    return getItemNameDatabase(sector.resource)+" ("+sector.count+")";
+    else
+    return text_empty;
+  }
+  
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
-      text_production+": "+resource.name+"\n"+
+      text_recources+": "+isResource()+"\n"+
       text_productivity+": "+count+"\n"+
       text_progress+": "+getPercent(progress, progressMax, 100)+" %\n"+isPlaceFree()+"\n";
   }
   public void drawSelected () {
     super.drawSelected();
     drawPlace(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
+  }
+
+  public ItemIntList  getRecieptDatabase() {
+    ItemIntList resources = new ItemIntList();
+    for (int i=0; i<4; i++) 
+      resources.append(Item.STEEL);
+    for (int i=0; i<10; i++) 
+      resources.append(Item.COOPER);
+    return resources;
   }
 }
 
@@ -544,7 +567,7 @@ class Droid extends Object {
     energyLeak=0.01+random(0.09);
     items = new ItemList();
     job=null;
-    carryingCapacity=(int)random(9)+1;
+    carryingCapacity=1;//(int)random(9)+1;
     skills = new IntList ();
     sprite = getSpriteDatabase();
   }
@@ -894,7 +917,7 @@ class Build extends Object {
     this.build=build;
     hp=0;
     sprite = getSpriteDatabase();
-    reciept = getRecieptDatabase(build.id);
+    reciept = build.getRecieptDatabase();
   }
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+

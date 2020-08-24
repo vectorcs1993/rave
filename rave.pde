@@ -54,21 +54,21 @@ void setup() {
   world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 20, 20, 0));
   world.getRoomCurrent().add(new Storage(Object.STORAGE, 1, 4, 20, 0));
 
-  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6,  0,Item.MAT_COOPER));
-  world.getRoomCurrent().add(new Miner(Object.MINER, 7, 6, 0,Item.MAT_STEEL));
-  world.getRoomCurrent().add(new Miner(Object.MINER, 9, 6, 0,Item.MAT_STEEL));
+  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6,  0,Item.COOPER));
+  world.getRoomCurrent().add(new Miner(Object.MINER, 7, 6, 0,Item.STEEL));
+  world.getRoomCurrent().add(new Miner(Object.MINER, 9, 6, 0,Item.STEEL));
 
-  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 20, 21, int(random(4)),Item.MAT_STEEL));
-world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 19, 20, int(random(4)),Item.MAT_STEEL));
-world.getRoomCurrent().add(new Enviroment(Object.BLOCK,18, 20, int(random(4)),Item.MAT_STEEL));
-world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)),Item.MAT_STEEL));
+  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 20, 21, int(random(4)),Item.STEEL));
+world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 19, 20, int(random(4)),Item.STEEL));
+world.getRoomCurrent().add(new Enviroment(Object.BLOCK,18, 20, int(random(4)),Item.STEEL));
+world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)),Item.STEEL));
 
   world.getRoomCurrent().add(new Support(Object.CHARGE, 8, 20, 0));
   world.getRoomCurrent().add(new Support(Object.CHARGE, 9, 20, 0));
   world.getRoomCurrent().add(new Support(Object.REPAIR, 10, 20, 0));
   
   world.getRoomCurrent().add(new Build(Object.BUILD, new Wall(Object.WALL, 0, 15, 20, 0)));
- world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.MINER, 16, 22,  0,Item.MAT_STEEL)));
+ world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.MINER, 16, 22,  0,Item.STEEL)));
   //===================
   d1=new Droid(Object.ACTOR, 1, 6);
   d1.skills.append(Job.GUARD);

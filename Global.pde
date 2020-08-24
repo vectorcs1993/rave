@@ -512,13 +512,15 @@ public class Room {
   }
 
   public class Sector {
-    private int x, y;
+    private int x, y, resource, count;
     private PImage sprite;
 
     Sector (int x, int y, PImage sprite) {
       this.x=x;
       this.y=y;
       this.sprite=sprite;
+      resource=Item.STEEL;
+      count =5+int( random(10));
     }
 
     public void draw() {
