@@ -1,6 +1,6 @@
 Droid d1, d2, d3, d4, d5;
 PImage tile, droid, fabrica, station_charge, station_repair, sprite_floor_steel, sprite_wall_steel, none, sprite_box_steel, sprite_box_wood, 
-sprite_item_steel, sprite_item_wood, sprite_block_steel;
+sprite_item_steel, sprite_item_wood, sprite_item_cooper, sprite_block_steel;
 String time = "";
 int time_cur;
 
@@ -23,6 +23,7 @@ void setup() {
   station_charge = requestImage("sprites/station_charge.png");
   station_repair = requestImage("sprites/station_repair.png");
   sprite_item_wood = requestImage("sprites/item_wood.png");
+  sprite_item_cooper = requestImage("sprites/item_cooper.png");
   fabrica = requestImage("sprites/fabrica.png");
   sprite_block_steel = requestImage("sprites/block_steel.png");
   playerFraction = new Fraction (0, "Robocraft");
@@ -53,7 +54,7 @@ void setup() {
   world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 20, 20, 0));
   world.getRoomCurrent().add(new Storage(Object.STORAGE, 1, 4, 20, 0));
 
-  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6,  0,Item.MAT_STEEL));
+  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6,  0,Item.MAT_COOPER));
   world.getRoomCurrent().add(new Miner(Object.MINER, 7, 6, 0,Item.MAT_STEEL));
   world.getRoomCurrent().add(new Miner(Object.MINER, 9, 6, 0,Item.MAT_STEEL));
 
@@ -78,7 +79,6 @@ world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)),I
 
   //===================
   d3=new Droid(Object.ACTOR, 15, 4);
-  
   d3.skills.append(Job.MAINTENANCE);
  d3.skills.append(Job.GUARD);
   //===================
@@ -88,6 +88,7 @@ world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)),I
   //===================
   d5=new Droid(Object.ACTOR, 7, 3);
   d5.skills.append(Job.BUILD);
+   d5.skills.append(Job.CARRY);
  
 world.getRoomCurrent().add(d1);
   world.getRoomCurrent().add(d3);

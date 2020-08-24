@@ -6,7 +6,7 @@ class Item implements cloneable {
   protected int stack;
   protected final int weight;
   public PImage sprite;
-  static final int MAT_STEEL=0, MAT_WOOD=1, MAT_STONE=2;
+  static final int MAT_STEEL=0, MAT_WOOD=1, MAT_STONE=2, MAT_COOPER=3;
 
   Item (int id) {
     this.id=id;

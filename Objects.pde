@@ -15,7 +15,7 @@ abstract class Object implements listened {
   protected Timer timerTick; 
   protected Fraction fraction;
   public final static int MINER=0, ITEM=1, LAYER=2, WALL=3, DOOR=4, 
-    STORAGE=5, BLOCK=6, REPAIR=7, CHARGE=8, BENCH=9, FLAG=10, BUILD=11, TREE=12, ACTOR=13;
+    STORAGE=5, BLOCK=6, REPAIR=7, CHARGE=8, BENCH=9, FLAG=10, BUILD=11, TREE=12, ACTOR=13;  //классификация по id
 
   Object (int id, int x, int y) {
     _id=world.getNewId();
@@ -108,7 +108,12 @@ abstract class Object implements listened {
       for (int i=0; i<4; i++)
         items.append(0);
       break;
+    case MINER: 
+      for (int i=0; i<12; i++)
+        items.append(0);
+      break;
     default:
+      items.append(0);
     }
     return items;
   }
@@ -324,7 +329,7 @@ class ItemMap extends Object {
     this.item = item;
     this.count=count;
     lock = false;
-        sprite = getSpriteDatabase();
+    sprite = getSpriteDatabase();
   }
   public int getRotateMax() {
     return 0;
@@ -450,7 +455,7 @@ class Miner extends Enviroment {
     return 50;
   }
   protected PImage getSpriteDatabase() {
-   return fabrica; 
+    return fabrica;
   }
   private boolean isPlaceRersource() {
     ArrayList <Object> objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
@@ -541,7 +546,7 @@ class Droid extends Object {
     job=null;
     carryingCapacity=(int)random(9)+1;
     skills = new IntList ();
-        sprite = getSpriteDatabase();
+    sprite = getSpriteDatabase();
   }
   protected String getNameDatabase(int id) {
     return super.getNameDatabase(id)+" "+str(_id);

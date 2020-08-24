@@ -77,6 +77,7 @@ text_reciept="Рецепт",
   text_res_steel="Сталь", 
   text_res_stone="Камень", 
   text_res_wood="Древесина", 
+  text_res_cooper="Медь",
 
 
   text_job_wait="Ожидает", 
