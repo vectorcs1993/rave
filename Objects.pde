@@ -277,9 +277,13 @@ class Wall extends Layer {
 class Enviroment extends Object {
   Item resource;
   int count;
+
   Enviroment(int id, int x, int y, int direction, int resource) {
+    this(id, x, y, direction);
+    this.resource = new Item(resource);
+  }
+  Enviroment(int id, int x, int y, int direction) {
     super(id, x, y, direction);
-    this.resource = new Item (resource);
     count=getCountResourcesDatabase();
     sprite = getSpriteDatabase();
     world.currentRoom.node[x][y].solid=true;
@@ -331,7 +335,7 @@ class ItemMap extends Object {
   public int getRotateMax() {
     return 0;
   }
-  protected void endDraw() {
+  protected void endDraw() { 
     if (count>1) {
       textSize(10);
       textAlign(RIGHT, BOTTOM);
@@ -443,12 +447,13 @@ class Miner extends Enviroment {
   int progress, progressMax;
   Room.Sector sector;
 
-  Miner (int id, int x, int y, int direction, int resource) {
-    super(id, x, y, direction, resource);
+  Miner (int id, int x, int y, int direction) {
+    super(id, x, y, direction); //убрать инициализацию ресурсы
     progress=0;
     progressMax=10;
     count=2;
     sector=world.currentRoom.getSector(x, y);
+    resource=new Item (sector.resource);
   }
   protected int getTick() {
     return 50;
@@ -494,7 +499,7 @@ class Miner extends Enviroment {
     } else {
       progress=0;
       if (isPlaceRersource()) {
-        int newCount = constrain(count,1,sector.count);
+        int newCount = constrain(count, 1, sector.count);
         world.getRoomCurrent().addItemHere(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1], (Item)resource.clone(), newCount);
         sector.count-=newCount;
       }
@@ -508,19 +513,19 @@ class Miner extends Enviroment {
   private String isPlaceFree() {
     if (!isPlaceRersource()) {
       if (sector.count<=0)
-       return text_no_resources;
+        return text_no_resources;
       else
-      return text_no_place_free;
+        return text_no_place_free;
     } else 
     return text_in_process;
   }
   private String isResource() {
-     if (sector.count>0)
-    return getItemNameDatabase(sector.resource)+" ("+sector.count+")";
+    if (sector.count>0)
+      return getItemNameDatabase(sector.resource)+" ("+sector.count+")";
     else
-    return text_empty;
+      return text_empty;
   }
-  
+
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+

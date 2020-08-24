@@ -519,8 +519,8 @@ public class Room {
       this.x=x;
       this.y=y;
       this.sprite=sprite;
-      resource=Item.STEEL;
-      count =5+int( random(10));
+      resource=int(random(2));//Item.STEEL;
+      count=10+int(random(120));
     }
 
     public void draw() {

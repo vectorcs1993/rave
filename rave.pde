@@ -29,7 +29,7 @@ void setup() {
   playerFraction = new Fraction (0, "Robocraft");
   world = new World(5, 42, 12, 24, 32);
 
-  world.getRoomCurrent().add(new Layer(Object.LAYER, 1, 7, 8, 0));
+  world.getRoomCurrent().add(new Layer(Object.LAYER, Item.STEEL, 7, 8, 0));
   world.getRoomCurrent().add(new Wall(Object.WALL, 0, 8, 8, 0));
   world.getRoomCurrent().add(new Wall(Object.WALL, 0, 9, 8, 0));
 
@@ -39,24 +39,24 @@ void setup() {
   world.getRoomCurrent().add(new Wall(Object.WALL, 0, 17, 8, 0));
 
   world.getRoomCurrent().add(new Wall(Object.WALL, 0, 19, 8, 0));
-  world.getRoomCurrent().add(new Layer(Object.LAYER, 0, 20, 9, 0));
-  world.getRoomCurrent().add(new Layer(Object.LAYER, 0, 20, 10, 0));
-  world.getRoomCurrent().add(new Layer(Object.LAYER, 0, 21, 9, 0));
+  world.getRoomCurrent().add(new Layer(Object.LAYER,  Item.STEEL, 20, 9,0));
+  world.getRoomCurrent().add(new Layer(Object.LAYER,  Item.STEEL, 20, 10, 0));
+  world.getRoomCurrent().add(new Layer(Object.LAYER,  Item.STEEL, 21, 9, 0));
   world.getRoomCurrent().add(new Wall(Object.WALL, 0, 20, 9, 0));
 
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 0, 0, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 6, 12, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 7, 12, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 21, 7, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 9, 12, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 18, 9, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 0, 0, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 6, 12, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 7, 12, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 21, 7, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 9, 12, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 18, 9, 0));
 
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, 0, 20, 20, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, 1, 4, 20, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 20, 20, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 4, 20, 0));
 
-  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6,  0,Item.COOPER));
-  world.getRoomCurrent().add(new Miner(Object.MINER, 7, 6, 0,Item.STEEL));
-  world.getRoomCurrent().add(new Miner(Object.MINER, 9, 6, 0,Item.STEEL));
+  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6,  0));
+  world.getRoomCurrent().add(new Miner(Object.MINER, 7, 6, 0));
+  world.getRoomCurrent().add(new Miner(Object.MINER, 9, 6, 0));
 
   world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 20, 21, int(random(4)),Item.STEEL));
 world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 19, 20, int(random(4)),Item.STEEL));
@@ -68,7 +68,7 @@ world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)),I
   world.getRoomCurrent().add(new Support(Object.REPAIR, 10, 20, 0));
   
   world.getRoomCurrent().add(new Build(Object.BUILD, new Wall(Object.WALL, 0, 15, 20, 0)));
- world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.MINER, 16, 22,  0,Item.STEEL)));
+ world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.MINER, 16, 22,  0)));
   //===================
   d1=new Droid(Object.ACTOR, 1, 6);
   d1.skills.append(Job.GUARD);

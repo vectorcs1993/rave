@@ -193,8 +193,8 @@ class JobPatrol extends Job {   //работа по патрулировании
   }
 
   private boolean addPointRandom() {
-    int rx = constrain((int)random(world.getSize()), 0, world.getSize()-1);
-    int ry = constrain((int)random(world.getSize()), 0, world.getSize()-1);
+    int rx = constrain((int)random(world.getSize()-1), 0, world.getSize()-1);
+    int ry = constrain((int)random(world.getSize()-1), 0, world.getSize()-1);
     if (!world.currentRoom.node[rx][ry].solid) {
       addPoint(rx, ry);
       return true;

@@ -6,7 +6,7 @@ class Item implements cloneable {
   protected int stack;
   protected final int weight;
   public PImage sprite;
-  static final int STEEL=0, WOOD=1, STONE=2, COOPER=3;
+  static final int STEEL=0, WOOD=3, STONE=2, COOPER=1;
 
   Item (int id) {
     this.id=id;
@@ -97,6 +97,7 @@ String getItemNameDatabase(int id) {
     return text_no_name;
   }
 }
+
 
 
 
