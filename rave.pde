@@ -94,7 +94,6 @@ world.getRoomCurrent().add(d1);
   world.getRoomCurrent().add(d2);
   world.getRoomCurrent().add(d4);
  world.getRoomCurrent().add(d5);
-
   time_cur=0;
   createInterface();
 }
