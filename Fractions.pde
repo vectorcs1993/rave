@@ -53,7 +53,7 @@ class Fraction {
             continue;
           }
         } 
-        if (droid.skills.hasValue(Job.MINE)) {  //работа по добыче обслуживанию построек
+        if (droid.skills.hasValue(Job.MINE)) {  //работа по добыче ресурсов
           Object objectMine = world.currentRoom.objects.getEnviroments().getObjectsPermissionMine();
           if (objectMine!=null) {
             droid.addJob(new JobMine((Enviroment)objectMine));
@@ -69,7 +69,7 @@ class Fraction {
         } 
         if (droid.skills.hasValue(Job.CARRY)) { //работа по переноске предметов
           Object objectCarry=null;
-          ObjectList itemsFree = world.currentRoom.items;
+          ObjectList itemsFree = world.currentRoom.items.getItemNoLock();
           if (!itemsFree.isEmpty())
             objectCarry=itemsFree.get(0);
           Object objectStorage = world.currentRoom.objects.getStorageFree();

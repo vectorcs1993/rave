@@ -1,10 +1,11 @@
 
 Button getListDroids;
 RadioButton menuColony, menuColonyObjects, menuColonyFraction;
-Text textLabel;
+Text textLabel, consoleLabel;
 void createInterface() {
   Interface.level=Interface.id=0;
-  textLabel = new Text (391, 259, 400, 160, 0, white, black);
+  textLabel = new Text (391, 182, 400, 400, 0, white, black);
+  consoleLabel = new Text (world.x_map-world.getCenterWindow(), world.y_map+world.getCenterWindow()+5, world.x_map+world.getCenterWindow()-5, 160, 0, white, black);
   menuColony = new RadioButton (5, 5, width-10, 32, 0, RadioButton.HORIZONTAL);
   menuColony.addButtons(new Button [] {new Button(text_objects, "getMenuObjects"), 
     new Button(text_buildings, "getListFabrics"), 
@@ -26,12 +27,12 @@ void createInterface() {
 
 public void drawInterface() {
   menuColony.control();
+  consoleLabel.draw();
   if (menuColony.select.script.equals("getMenuObjects")) {
     menuColonyObjects.control();
-    textLabel.draw();
+
   } else if (menuColony.select.script.equals("getMenuFraction")) {
     menuColonyFraction.control();
-    textLabel.draw();
   }
 }
 

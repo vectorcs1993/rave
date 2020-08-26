@@ -11,7 +11,6 @@ public final class World {
   private int deltaX, deltaY;
   private boolean moveUnlock;
   public boolean pause, showStatus;
-  public Text selectedLabel;
 
   private World (int x, int y, int size_window, int size, int grid_size) {
     this.tick=50;
@@ -36,7 +35,6 @@ public final class World {
     currentRoom=rooms.get(0);
     createLand();
     pause=showStatus=false;
-    selectedLabel = new Text (x_map-getCenterWindow(), y_map+getCenterWindow()+5, x_map+getCenterWindow()-5, 160, 0, white, black);
   }
 
   public int getNewId() {
@@ -140,16 +138,16 @@ public final class World {
         "mouse X: "+getMouseMapX()+" Y:"+getMouseMapY()+"\n"+
         "mouse_abs X: "+mouseX+" Y:"+mouseY, x_window-getSizeWindow()/2+10, y_window-getSizeWindow()/2+24);
     }
-    selectedLabel.control();
+    textLabel.control();
   }
 
   public void update() {
     if (currentRoom!=null) {
       if (currentRoom.currentObject!=null && (currentRoom.currentObject.hp>0 || currentRoom.currentObject instanceof Build))  //если выбран объект и он не уничтожен
-        world.selectedLabel.loadText(currentRoom.currentObject.getDescript(), true);
+        textLabel.loadText(currentRoom.currentObject.getDescript(), true);
       else {
         currentRoom.currentObject=null;
-        world.selectedLabel.loadText(text_selected_objects, false);
+        textLabel.loadText(text_selected_objects, false);
       }
       currentRoom.update();
       playerFraction.update();

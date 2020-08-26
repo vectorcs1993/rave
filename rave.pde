@@ -1,6 +1,6 @@
-Droid d1, d2, d3, d4, d5;
-PImage tile, droid, fabrica, station_charge, station_repair, sprite_floor_steel, sprite_wall_steel, none, sprite_box_steel, sprite_box_wood, 
-sprite_item_steel, sprite_item_wood, sprite_item_cooper, sprite_block_steel;
+Droid d1, d2, d3, d4, d5, d6;
+PImage tile, droid, drill, station_charge, station_repair, sprite_floor_steel, sprite_wall_steel, none, sprite_box_steel, sprite_box_wood, 
+  sprite_item_steel, sprite_item_wood, sprite_item_cooper, sprite_block_steel;
 String time = "";
 int time_cur;
 
@@ -13,7 +13,7 @@ void setup() {
   textLeading(24);
   strokeCap(SQUARE);
   tile = requestImage("sprites/tile_grass.png");
-  sprite_floor_steel = requestImage("sprites/floor_stone.png");
+  sprite_floor_steel = requestImage("sprites/floor_steel.png");
   sprite_wall_steel = requestImage("sprites/wall_steel.png");
   sprite_box_steel = requestImage("sprites/storage_steel_box.png");
   sprite_box_wood = requestImage("sprites/storage_wood_box.png");
@@ -24,7 +24,7 @@ void setup() {
   station_repair = requestImage("sprites/station_repair.png");
   sprite_item_wood = requestImage("sprites/item_wood.png");
   sprite_item_cooper = requestImage("sprites/item_cooper.png");
-  fabrica = requestImage("sprites/fabrica.png");
+  drill = requestImage("sprites/drill.png");
   sprite_block_steel = requestImage("sprites/block_steel.png");
   playerFraction = new Fraction (0, "Robocraft");
   world = new World(5, 42, 12, 24, 32);
@@ -39,9 +39,9 @@ void setup() {
   world.getRoomCurrent().add(new Wall(Object.WALL, 0, 17, 8, 0));
 
   world.getRoomCurrent().add(new Wall(Object.WALL, 0, 19, 8, 0));
-  world.getRoomCurrent().add(new Layer(Object.LAYER,  Item.STEEL, 20, 9,0));
-  world.getRoomCurrent().add(new Layer(Object.LAYER,  Item.STEEL, 20, 10, 0));
-  world.getRoomCurrent().add(new Layer(Object.LAYER,  Item.STEEL, 21, 9, 0));
+  world.getRoomCurrent().add(new Layer(Object.LAYER, Item.STEEL, 20, 9, 0));
+  world.getRoomCurrent().add(new Layer(Object.LAYER, Item.STEEL, 20, 10, 0));
+  world.getRoomCurrent().add(new Layer(Object.LAYER, Item.STEEL, 21, 9, 0));
   world.getRoomCurrent().add(new Wall(Object.WALL, 0, 20, 9, 0));
 
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 0, 0, 0));
@@ -54,47 +54,52 @@ void setup() {
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 20, 20, 0));
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 4, 20, 0));
 
-  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6,  0));
+  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6, 0));
   world.getRoomCurrent().add(new Miner(Object.MINER, 7, 6, 0));
   world.getRoomCurrent().add(new Miner(Object.MINER, 9, 6, 0));
 
-  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 20, 21, int(random(4)),Item.STEEL));
-world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 19, 20, int(random(4)),Item.STEEL));
-world.getRoomCurrent().add(new Enviroment(Object.BLOCK,18, 20, int(random(4)),Item.STEEL));
-world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)),Item.STEEL));
+  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 20, 21, int(random(4)), Item.STEEL));
+  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 19, 20, int(random(4)), Item.STEEL));
+  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 18, 20, int(random(4)), Item.STEEL));
+  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)), Item.STEEL));
 
   world.getRoomCurrent().add(new Support(Object.CHARGE, 8, 20, 0));
   world.getRoomCurrent().add(new Support(Object.CHARGE, 9, 20, 0));
   world.getRoomCurrent().add(new Support(Object.REPAIR, 10, 20, 0));
-  
+
   world.getRoomCurrent().add(new Build(Object.BUILD, new Wall(Object.WALL, 0, 15, 20, 0)));
- world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.MINER, 16, 22,  0)));
+  world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.MINER, 16, 22, 0)));
+  
   //===================
   d1=new Droid(Object.ACTOR, 1, 6);
-  d1.skills.append(Job.GUARD);
-
+  //d1.skills.append(Job.GUARD);
+  d1.skills.append(Job.CARRY);
   //===================
   d2=new Droid(Object.ACTOR, 1, 4);
   d2.skills.append(Job.CARRY);
-
   //===================
   d3=new Droid(Object.ACTOR, 15, 4);
   d3.skills.append(Job.MAINTENANCE);
- d3.skills.append(Job.GUARD);
+  d3.skills.append(Job.GUARD);
   //===================
   d4=new Droid(Object.ACTOR, 7, 0);
   d4.skills.append(Job.MINE);
- d4.skills.append(Job.GUARD);
+  d4.skills.append(Job.GUARD);
   //===================
   d5=new Droid(Object.ACTOR, 7, 3);
-  d5.skills.append(Job.BUILD);
-   d5.skills.append(Job.CARRY);
- 
-world.getRoomCurrent().add(d1);
+  //d5.skills.append(Job.BUILD);
+  d5.skills.append(Job.CARRY);
+  //========================
+  d6=new Droid(Object.ACTOR, 4, 3);
+ // d6.skills.append(Job.BUILD);
+ d6.skills.append(Job.MAINTENANCE);
+
+  world.getRoomCurrent().add(d1);
   world.getRoomCurrent().add(d3);
   world.getRoomCurrent().add(d2);
   world.getRoomCurrent().add(d4);
- world.getRoomCurrent().add(d5);
+  world.getRoomCurrent().add(d5);
+  world.getRoomCurrent().add(d6);
   time_cur=0;
   createInterface();
 }
@@ -177,9 +182,9 @@ void keyPressed() {
     Room room=world.getRoomCurrent();
 
     if (world.isOverMap()) {
-      if (room.currentObject instanceof Droid) {
-        Droid droid = (Droid)room.currentObject;
-        //droid.moveTo(world.getMouseMapX(), world.getMouseMapY());
+      if (room.currentObject instanceof ItemMap) {
+        ItemMap item = (ItemMap)room.currentObject;
+        item.lock=!item.lock;
       }
     }
   } else if (keyCode==82) {

@@ -153,6 +153,31 @@ abstract class Object implements listened {
       popStyle();
     }
   }
+  protected void drawCount(int count) {
+    pushMatrix();
+    translate(x*world.grid_size, y*world.grid_size);
+    pushStyle();
+    textSize(10);
+    textAlign(RIGHT, BOTTOM);
+    text(count, world.grid_size-3, world.grid_size+2);
+    popStyle();  
+    popMatrix();
+  }
+
+
+
+  protected void drawLock() {
+    pushMatrix();
+    translate(x*world.grid_size, y*world.grid_size);
+    pushStyle();
+    strokeWeight(3);
+    stroke(red);
+    line(5, 5, world.grid_size-5, world.grid_size-5);
+    line(world.grid_size-5, 5, 5, world.grid_size-5);
+    popStyle();  
+    popMatrix();
+  }
+
   public void drawPlace(int x, int y) {
     pushStyle();
     noFill();
@@ -164,8 +189,6 @@ abstract class Object implements listened {
   protected int getDirectionRandom() {
     return int(random(getRotateMax()+1));
   }
-
-
   public void setDirectionNext() {
     if (direction<getRotateMax()) 
       direction++;
@@ -325,28 +348,40 @@ class ItemMap extends Object {
   Item item;
   int count;
   boolean lock;
+  Job job;
+
   ItemMap (int x, int y, Item item, int count) {
     super (ITEM, x, y);
     this.item = item;
     this.count=count;
-    lock = false;
+    lock = true;
+    job=null;
     sprite = getSpriteDatabase();
   }
   public int getRotateMax() {
     return 0;
   }
+
   protected void endDraw() { 
-    if (count>1) {
-      textSize(10);
-      textAlign(RIGHT, BOTTOM);
-      text(count, world.grid_size/2-3, world.grid_size/2+2);
-    }
     popStyle();
     popMatrix();
+    if (lock)
+      drawLock();
+    if (count>1) 
+      drawCount(count);
   }
+
+  private String isAllow() {
+    if (lock)
+      return text_no;
+    else 
+    return text_yes;
+  }
+
   protected String getDescript() {
     return getName() +": "+item.name+"\n"+
       text_count+": "+count+"\n"+
+      text_allow+": "+isAllow()+"\n"+
       text_stack+": "+item.stack+"\n"+
       text_weight+": "+item.weight+" (общий: "+item.weight*count+")"+"\n";
   }
@@ -459,7 +494,7 @@ class Miner extends Enviroment {
     return 50;
   }
   protected PImage getSpriteDatabase() {
-    return fabrica;
+    return drill;
   }
   private boolean isPlaceRersource() {
     if (sector.count>0) {
@@ -1042,7 +1077,7 @@ class ObjectList extends ArrayList <Object> {
   public ObjectList getObjectsPermissionRepair() {
     ObjectList objectsNoDroids= new ObjectList();
     for (Object object : this) {
-      if ((!(object instanceof Droid) && !(object instanceof Enviroment)) || (object instanceof Miner))
+      if ((!(object instanceof Droid) && !(object instanceof Enviroment)  && !(object instanceof Build)) || (object instanceof Miner))
         objectsNoDroids.add(object);
     }
     return objectsNoDroids;
@@ -1078,9 +1113,6 @@ class ObjectList extends ArrayList <Object> {
     ObjectList items = new ObjectList();
     for (Object partItem : this) {
       ItemMap itemMap = (ItemMap) partItem;
-
-
-
       if (playerFraction.jobs.isEmpty()) {
         items.add(itemMap);
       } else {
@@ -1095,7 +1127,17 @@ class ObjectList extends ArrayList <Object> {
     }
     return items;
   }
-
+  public ObjectList getItemNoLock() {
+    ObjectList items = new ObjectList();
+    for (Object object : this) {
+      if (object instanceof ItemMap) {
+        ItemMap itemMap = (ItemMap)object;
+        if (!itemMap.lock && itemMap.job==null)
+          items.add(object);
+      }
+    }
+    return items;
+  }
 
   public ObjectList getItemMapList() {
     ObjectList items = new ObjectList();

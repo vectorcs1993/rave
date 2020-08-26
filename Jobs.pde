@@ -117,6 +117,7 @@ class JobPutItem extends Job {
         break;
       }
     }
+    itemMap.job=null;
   }
 
   public void update() {
@@ -188,7 +189,7 @@ class JobPatrol extends Job {   //работа по патрулировании
         return;
     } 
     JobMove curJob = new JobMove(world.currentRoom.node[rx][ry]);
-    curJob.worker=worker;
+    curJob.setWorker(worker);
     path.add(curJob);
   }
 

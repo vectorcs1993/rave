@@ -18,6 +18,7 @@ class JobCarry extends Job {  //работа по транспортировке
   }
   public void setWorker(Droid worker) {
     super.setWorker(worker);
+    itemMap.job=this;
     moveTo.setWorker(worker);
     putItem.setWorker(worker);
     if (moveBack!=null) 
