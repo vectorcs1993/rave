@@ -1,6 +1,6 @@
 Droid d1, d2, d3, d4, d5, d6;
-PImage tile, droid, drill, station_charge, station_repair, sprite_floor_steel, sprite_wall_steel, none, sprite_box_steel, sprite_box_wood, 
-  sprite_item_steel, sprite_item_wood, sprite_item_cooper, sprite_block_steel;
+PImage tile, droid, sprite_object_drill,sprite_object_well, station_charge, station_repair, sprite_floor_steel, sprite_wall_steel, none, sprite_box_steel, sprite_box_wood, 
+  sprite_item_steel, sprite_item_wood, sprite_item_oil, sprite_item_cooper, sprite_block_steel, sprite_tree;
 String time = "";
 int time_cur;
 
@@ -24,8 +24,11 @@ void setup() {
   station_repair = requestImage("sprites/station_repair.png");
   sprite_item_wood = requestImage("sprites/item_wood.png");
   sprite_item_cooper = requestImage("sprites/item_cooper.png");
-  drill = requestImage("sprites/drill.png");
+   sprite_item_oil = requestImage("sprites/item_oil.png");
+  sprite_object_drill = requestImage("sprites/drill.png");
+  sprite_object_well = requestImage("sprites/well.png");
   sprite_block_steel = requestImage("sprites/block_steel.png");
+  sprite_tree = requestImage("sprites/tree.png");
   playerFraction = new Fraction (0, "Robocraft");
   world = new World(5, 42, 12, 24, 32);
 
@@ -54,21 +57,33 @@ void setup() {
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 20, 20, 0));
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 4, 20, 0));
 
-  world.getRoomCurrent().add(new Miner(Object.MINER, 6, 6, 0));
-  world.getRoomCurrent().add(new Miner(Object.MINER, 7, 6, 0));
-  world.getRoomCurrent().add(new Miner(Object.MINER, 9, 6, 0));
+  world.getRoomCurrent().add(new Miner(Object.WELL, 6, 6, 0));
+  world.getRoomCurrent().add(new Miner(Object.DRILL, 7, 6, 0));
+  world.getRoomCurrent().add(new Miner(Object.DRILL, 9, 6, 0));
+  
+  world.getRoomCurrent().add(new Miner(Object.DRILL, 14, 3, 0));
 
   world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 20, 21, int(random(4)), Item.STEEL));
-  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 19, 20, int(random(4)), Item.STEEL));
+  world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 13, 11, int(random(4)), Item.STEEL));
   world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 18, 20, int(random(4)), Item.STEEL));
   world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)), Item.STEEL));
+  
+  world.getRoomCurrent().add(new Enviroment(Object.TREE, 10, 12, int(random(4)), Item.WOOD));
+   world.getRoomCurrent().add(new Enviroment(Object.TREE, 11, 13, int(random(4)), Item.WOOD));
+    world.getRoomCurrent().add(new Enviroment(Object.TREE, 19, 22, int(random(4)), Item.WOOD));
+     world.getRoomCurrent().add(new Enviroment(Object.TREE, 16, 15, int(random(4)), Item.WOOD));
+      world.getRoomCurrent().add(new Enviroment(Object.TREE, 17, 12, int(random(4)), Item.WOOD));
+       world.getRoomCurrent().add(new Enviroment(Object.TREE, 19, 11, int(random(4)), Item.WOOD));
+        world.getRoomCurrent().add(new Enviroment(Object.TREE, 20, 17, int(random(4)), Item.WOOD));
+
+    
 
   world.getRoomCurrent().add(new Support(Object.CHARGE, 8, 20, 0));
   world.getRoomCurrent().add(new Support(Object.CHARGE, 9, 20, 0));
   world.getRoomCurrent().add(new Support(Object.REPAIR, 10, 20, 0));
 
   world.getRoomCurrent().add(new Build(Object.BUILD, new Wall(Object.WALL, 0, 15, 20, 0)));
-  world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.MINER, 16, 22, 0)));
+  world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.DRILL, 16, 22, 0)));
   
   //===================
   d1=new Droid(Object.ACTOR, 1, 6);
@@ -87,12 +102,15 @@ void setup() {
   d4.skills.append(Job.GUARD);
   //===================
   d5=new Droid(Object.ACTOR, 7, 3);
-  //d5.skills.append(Job.BUILD);
-  d5.skills.append(Job.CARRY);
+  d5.skills.append(Job.BUILD);
+  //d5.skills.append(Job.MINE);
+ d5.skills.append(Job.CARRY);
+  //d5.skills.append(Job.MAINTENANCE);
   //========================
   d6=new Droid(Object.ACTOR, 4, 3);
- // d6.skills.append(Job.BUILD);
+ d6.skills.append(Job.BUILD);
  d6.skills.append(Job.MAINTENANCE);
+ d5.skills.append(Job.CARRY);
 
   world.getRoomCurrent().add(d1);
   world.getRoomCurrent().add(d3);

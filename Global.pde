@@ -138,7 +138,6 @@ public final class World {
         "mouse X: "+getMouseMapX()+" Y:"+getMouseMapY()+"\n"+
         "mouse_abs X: "+mouseX+" Y:"+mouseY, x_window-getSizeWindow()/2+10, y_window-getSizeWindow()/2+24);
     }
-    textLabel.control();
   }
 
   public void update() {
@@ -148,6 +147,14 @@ public final class World {
       else {
         currentRoom.currentObject=null;
         textLabel.loadText(text_selected_objects, false);
+      }
+      if (currentRoom.currentObject instanceof Build) {
+        if (((Build)currentRoom.currentObject).isComplete())
+          currentRoom.currentObject=null;
+      }
+        if (currentRoom.currentObject instanceof ItemMap) {
+        if (((ItemMap)currentRoom.currentObject).count<=0)
+          currentRoom.currentObject=null;
       }
       currentRoom.update();
       playerFraction.update();
@@ -517,8 +524,8 @@ public class Room {
       this.x=x;
       this.y=y;
       this.sprite=sprite;
-      resource=int(random(2));//Item.STEEL;
-      count=10+int(random(120));
+      resource=int(random(3));//Item.STEEL;
+      count=100+int(random(120));
     }
 
     public void draw() {

@@ -1,16 +1,86 @@
-class JobCarry extends Job {  //работа по транспортировке предметов
-  JobMove move, moveTo, moveBack;
+
+
+
+class JobCarryItem extends Job {  //работа по транспортировке предметов
+  JobMove move, moveToObject1, moveToObject2;
   JobPutItem putItem;
   JobGetItem getItem;
+  Object object1, object2;
+  Item item;
+
+  JobCarryItem(Object object1, Object object2, Item item) {
+    this.item=item;
+    this.object1=object1;
+    this.object2=object2;
+    object1.job=object2.job=this;
+    move=moveToObject1=new JobMove (world.currentRoom.node[object1.x][object1.y]); 
+    moveToObject2=new JobMove (world.currentRoom.node[object2.x][object2.y]);
+    putItem=new JobPutItem(object1, item) ;
+    getItem=new JobGetItem(object2, item);
+    name=getNameDatabase();
+    skill = Job.CARRY;
+  }
+
+  protected String getNameDatabase() {
+    return text_job_carry+" "+item.getName();
+  }
+  public void setWorker(Droid worker) {
+    super.setWorker(worker);
+    moveToObject1.setWorker(worker);
+    putItem.setWorker(worker);
+    moveToObject2.setWorker(worker);
+    getItem.setWorker(worker);
+  }
+
+  public boolean isComplete() {
+    if (move==moveToObject2 && move.isComplete() && getItem.isComplete() && putItem.isComplete()) 
+      return true; 
+    else 
+    return false;
+  }
+  public void update () {
+    if (!move.isComplete()) 
+      move.update();
+    else {
+      if (move==moveToObject1) {
+        if (!putItem.isComplete()) 
+          putItem.update();
+        else 
+        move=moveToObject2;
+      } else if (move==moveToObject2) 
+        if (!getItem.isComplete()) 
+          getItem.update();
+    }
+  }
+  public String getDescript() {
+    if (!move.isComplete() && !putItem.isComplete() && !getItem.isComplete() && move==moveToObject1) 
+      return moveToObject1.name;
+    else if (move.isComplete() && !putItem.isComplete() && !getItem.isComplete() && move==moveToObject1) 
+      return putItem.getDescript();
+    else if (!move.isComplete() && putItem.isComplete() && !getItem.isComplete() && move==moveToObject2) 
+      return moveToObject2.name;
+    else if (move.isComplete() && putItem.isComplete() && !getItem.isComplete() && move==moveToObject2) 
+      return getItem.getDescript();
+    else 
+    return text_job_wait;
+  }
+}
+
+
+
+class JobCarryItemMap extends Job {  //работа по транспортировке предметов
+  JobMove move, moveTo, moveBack;
+  JobPutItemMap putItem;
+  JobGetItemMap getItem;
   Storage storage;
   ItemMap itemMap;
 
-  JobCarry(ItemMap itemMap) {
+  JobCarryItemMap(ItemMap itemMap) {
     super();
     this.storage=null;
     this.itemMap= itemMap;
     move = moveTo = new JobMove (world.currentRoom.node[itemMap.x][itemMap.y]);
-    putItem = new JobPutItem (itemMap);
+    putItem = new JobPutItemMap (itemMap);
     moveBack = null;
     getItem = null;
     name = getNameDatabase();
@@ -32,9 +102,9 @@ class JobCarry extends Job {  //работа по транспортировке
     moveTo = move = null;
     move = moveTo = new JobMove (world.currentRoom.node[itemMap.x][itemMap.y]);
     putItem = null;
-    putItem = new JobPutItem (itemMap);
+    putItem = new JobPutItemMap (itemMap);
     getItem = null;
-    getItem = new JobGetItem (storage, itemMap);
+    getItem = new JobGetItemMap (storage, itemMap);
     moveBack=null;
     moveBack = new JobMove (getNeighboring(world.currentRoom.node[storage.x][storage.y], world.currentRoom.node[storage.x][storage.y]).get(0));
     getItem.storage=storage;
@@ -98,7 +168,7 @@ class JobSupport extends Job {   //работа по техническому о
   JobSupportPrimary support;
   JobMove moveTo;
   Support object;
-  
+
   JobSupport (int type, Support support) {
     super(); 
     object = support;
@@ -129,10 +199,10 @@ class JobSupport extends Job {   //работа по техническому о
       return text_job_wait;
   }
   public void update () {
-     moveTo.target=world.currentRoom.node[getPlace(object.x, object.y, object.direction)[0]][getPlace(object.x, object.y, object.direction)[1]];
+    moveTo.target=world.currentRoom.node[getPlace(object.x, object.y, object.direction)[0]][getPlace(object.x, object.y, object.direction)[1]];
     if (!moveTo.isComplete()) 
-       moveTo.update();
-     else {
+      moveTo.update();
+    else {
       worker.setDirection(support.support.x, support.support.y);
       if (!support.isComplete())  
         support.update();
@@ -160,6 +230,7 @@ class JobMaintenance extends Job {   //работа по обслуживани�
     return text_job_maintenance;
   }
   public void setWorker(Droid worker) {
+    repair.object.job=this;
     super.setWorker(worker);
     moveTo.setWorker(worker);
     repair.setWorker(worker);
@@ -204,6 +275,7 @@ class JobMine extends Job {   //работа по добыче ресурсов
   }
   public void setWorker(Droid worker) {
     super.setWorker(worker);
+    mine.enviroment.job=this;
     moveTo.setWorker(worker);
     mine.setWorker(worker);
   }
@@ -246,6 +318,7 @@ class JobBuild extends Job {   //работа по строительству о
     return text_job_build;
   }
   public void setWorker(Droid worker) {
+    build.object.job=this;
     super.setWorker(worker);
     moveTo.setWorker(worker);
     build.setWorker(worker);

@@ -48,7 +48,6 @@ class JobMove extends Job {   //работа по перемещению
     name = getNameDatabase();
   }
 
-
   public boolean isComplete() {
     if (worker!=null) {
       if (worker.x==target.x && worker.y==target.y) 
@@ -65,10 +64,12 @@ class JobMove extends Job {   //работа по перемещению
       return 100;
   }
   protected String getNameDatabase() {
-    return "Перемещается в "+target.x+","+target.y;
+    return text_worker_move+" "+target.x+","+target.y;
   }
   public void update() {
     name = getNameDatabase();
+    if (target.solid)
+      target= getNeighboring(world.currentRoom.node[target.x][target.y], world.currentRoom.node[target.x][target.y]).get(0);
     if (worker!=null) {
       if (!worker.path.isEmpty()) 
         worker.moveNextPoint();
@@ -78,11 +79,11 @@ class JobMove extends Job {   //работа по перемещению
   }
 }
 
-class JobPutItem extends Job {
+class JobPutItemMap extends Job {
   int process, processMax;
   ItemMap itemMap;
 
-  JobPutItem(ItemMap itemMap) {
+  JobPutItemMap(ItemMap itemMap) {
     super();
     this.itemMap = itemMap;
     process = 0;
@@ -91,7 +92,7 @@ class JobPutItem extends Job {
   }
 
   protected String getNameDatabase() {
-    return "Берет "+itemMap.item.getName();
+    return text_worker_put+" "+itemMap.item.getName();
   }
 
   public String getDescript() {
@@ -119,6 +120,54 @@ class JobPutItem extends Job {
     }
     itemMap.job=null;
   }
+  public void update() {
+    if (process<processMax) {
+      process++;
+      worker.setEnergy();
+      if (process>=processMax) 
+        action();
+    }
+  }
+}
+
+class JobPutItem extends Job {
+  int process, processMax;
+  Item item;
+  Object object;
+
+  JobPutItem(Object object, Item item) {
+    super();
+    this.item = item;
+    this.object = object;
+    process = 0;
+    processMax= item.weight;
+    name = getNameDatabase();
+  }
+  protected String getNameDatabase() {
+    return text_worker_put+" "+item.getName();
+  }
+  public String getDescript() {
+    return name+" "+getProcess()+" %";
+  }
+  public boolean isComplete() {
+    if (process>=processMax) 
+      return true;
+    else 
+    return false;
+  }
+  public int getProcess() {
+    return (int)map(process, 0, processMax, 0, 100);
+  }
+
+  protected void action() {
+    if (object instanceof Storage) {
+      for (int i=0; i<worker.carryingCapacity; i++) {
+        worker.items.add(item);
+        ((Storage)object).items.remove(item);
+      }
+    }
+    object.job=null;
+  }
 
   public void update() {
     if (process<processMax) {
@@ -131,16 +180,17 @@ class JobPutItem extends Job {
 }
 
 
-class JobGetItem extends JobPutItem {   //работа по выгрузке предмета 
+
+class JobGetItemMap extends JobPutItemMap {   //работа по выгрузке предмета 
   Storage storage;
 
-  JobGetItem(Storage storage, ItemMap itemMap) {
+  JobGetItemMap(Storage storage, ItemMap itemMap) {
     super(itemMap);
     this.storage=storage;
   }
 
   protected String getNameDatabase() {
-    return "Кладет "+itemMap.item.getName();
+    return text_worker_get+" "+itemMap.item.getName();
   }
   public void update() {
     super.update();
@@ -167,6 +217,36 @@ class JobGetItem extends JobPutItem {   //работа по выгрузке п�
         world.currentRoom.addItemOrder(worker.x, worker.y, item, 1);
       }
     }
+  }
+}
+
+class JobGetItem extends JobPutItem {   //работа по выгрузке предмета 
+
+  JobGetItem(Object object, Item item) {
+    super(object, item);
+  }
+  
+  protected String getNameDatabase() {
+    return text_worker_get+" "+item.getName();
+  }
+  
+  public void update() {
+    super.update();
+    if (!isComplete())
+      worker.setDirection(object.x, object.y);
+  }
+  
+  protected void action() {
+    for (int i=0; i<worker.items.calculationItem(item.id); i++) {
+      worker.items.remove(item);
+      if (object instanceof Storage) {
+        ((Storage)object).items.add(item);
+      } else if  (object instanceof Build) {
+        ((Build)object).items.append(item.id);
+      }
+      
+    }
+    object.job=null;
   }
 }
 
@@ -258,9 +338,9 @@ class JobSupportPrimary extends Job {
   protected String getNameDatabase() {
     switch (type) {
     case Job.CHARGE:
-      return "Заряжает аккумулятор";
+      return text_worker_support_charge;
     case Job.REPAIR:
-      return "Ремонтируется";
+      return text_worker_support_repair;
     default:
       return text_no;
     }
@@ -286,7 +366,7 @@ class JobRepair extends Job {   //работа по восстановлению
     name = getNameDatabase();
   }
   protected String getNameDatabase() {
-    return "Ремонтирует "+object.name;
+    return text_worker_repair+" "+object.name;
   }
   public boolean isComplete() {
     if (object.hp>=object.hpMax)
@@ -297,6 +377,8 @@ class JobRepair extends Job {   //работа по восстановлению
   public void update () {
     object.hp++;
     worker.setEnergy();
+    if (isComplete()) 
+      object.job=null;
   }
 }
 
@@ -324,6 +406,7 @@ class JobMinePrimary extends Job {
     return (int)map(enviroment.hp, 0, enviroment.hpMax, 100, 0);
   }
   protected void action() {
+    enviroment.job=null;
     world.currentRoom.remove(enviroment);
     enviroment.delete();
   }
@@ -348,7 +431,7 @@ class JobBuildPrimary extends Job {
   }
 
   protected String getNameDatabase() {
-    return "Cтроит "+object.getNameShort();
+    return text_worker_build+" "+object.getBuildDescript();
   }
 
   public String getDescript() {
@@ -366,6 +449,7 @@ class JobBuildPrimary extends Job {
   }
 
   protected void action() {
+    object.job=null;
     object.build.hp=object.build.hpMax;
     world.currentRoom.add(object.build);
     world.currentRoom.remove(object);

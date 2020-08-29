@@ -14,10 +14,10 @@ void createInterface() {
     new Button(text_zone, "getListZone"), 
     new Button(text_menu, "getListDroids")});
   menuColonyObjects = new RadioButton (391, 42, 405, 128, 0, RadioButton.VERTICAL);
-  menuColonyObjects.addButtons(new Button [] {new Button(text_droids, "getListDroids"), 
-    new Button(text_miners, "getListFabrics"), 
-    new Button(text_storages, "getListStorages"), 
-    new Button(text_enviroments, "getListOther")});
+  menuColonyObjects.addButtons(new Button [] {new Button(text_info, "getObjectInfo"), 
+    new Button(text_diagnostic, "getListFabrics"), 
+    new Button(text_cargo, "getListStorages"), 
+    new Button(text_job, "getListOther")});
   menuColonyFraction = new RadioButton (391, 42, 405, 128, 0, RadioButton.VERTICAL);
   menuColonyFraction.addButtons(new Button [] {new Button(text_info, "getFractionInfo"), 
     new Button(text_job, "getListJobs"), 
@@ -30,9 +30,11 @@ public void drawInterface() {
   consoleLabel.draw();
   if (menuColony.select.script.equals("getMenuObjects")) {
     menuColonyObjects.control();
-
+    if (menuColonyObjects.select.script.equals("getObjectInfo"))
+      textLabel.control();
   } else if (menuColony.select.script.equals("getMenuFraction")) {
     menuColonyFraction.control();
+    textLabel.control();
   }
 }
 
@@ -213,7 +215,7 @@ class Button extends ObjectGui {
           textLabel.loadText(text, false);
         break;
       case "getListResources" :
-          text=world.currentRoom.getItemsList().getNames();
+        text=world.currentRoom.getItemsList().getNames();
         if (text.isEmpty())
           textLabel.loadText(text_empty, false);
         else
@@ -223,22 +225,22 @@ class Button extends ObjectGui {
         for (Object part : world.currentRoom.getEnviromentList()) 
           text+=part.getName()+"\n";
         if (text.isEmpty())
-          textLabel.loadText(text_empty,true);
+          textLabel.loadText(text_empty, true);
         else
           textLabel.loadText(text, true);
         break;
       case "getFractionInfo" :
         text = text_nikname+": "+ playerFraction.name+"\n"+
-        text_count_droids+": "+world.currentRoom.objects.getDroidList().size()+"\n"+
-        text_free_droids+": "+world.currentRoom.objects.getDroidListJobFree().size()+"\n";
+          text_count_droids+": "+world.currentRoom.objects.getDroidList().size()+"\n"+
+          text_free_droids+": "+world.currentRoom.objects.getDroidListJobFree().size()+"\n";
         textLabel.loadText(text, false);
         break;
       case "getListJobs" :
         for (Job part : playerFraction.jobs) 
-        if (part.worker!=null)
-        text+=part.name+" ("+part.worker.name+")\n";
-        else
-          text+=part.name+" (не назначено)\n";
+          if (part.worker!=null)
+            text+=part.name+" ("+part.worker.name+")\n";
+          else
+            text+=part.name+" (не назначено)\n";
         if (text.isEmpty())
           textLabel.loadText(text_empty, false);
         else

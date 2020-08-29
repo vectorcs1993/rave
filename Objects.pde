@@ -14,8 +14,9 @@ abstract class Object implements listened {
   protected PImage sprite;
   protected Timer timerTick; 
   protected Fraction fraction;
-  public final static int MINER=0, ITEM=1, LAYER=2, WALL=3, DOOR=4, 
-    STORAGE=5, BLOCK=6, REPAIR=7, CHARGE=8, BENCH=9, FLAG=10, BUILD=11, TREE=12, ACTOR=13;  //классификация по id
+  public final static int  ITEM=1, LAYER=2, WALL=3, DOOR=4, 
+    STORAGE=5, BLOCK=6, REPAIR=7, CHARGE=8, BENCH=9, FLAG=10, BUILD=11, TREE=12, ACTOR=13, DRILL=14, WELL=15;  //классификация по id
+  protected Job job;
 
   Object (int id, int x, int y) {
     _id=world.getNewId();
@@ -29,6 +30,7 @@ abstract class Object implements listened {
     timers.add(timerTick);
     fraction = null;
     name = getNameDatabase(id);
+    job=null;
   }
   public void drawList() {
     text(name, 0, 0);
@@ -37,7 +39,15 @@ abstract class Object implements listened {
     this(id, x, y);
     this.direction=direction;
   }
-
+  protected String isJob() {
+    if (job!=null)
+      if (job.worker!=null)
+        return job.name+" \n("+job.worker.name+")";
+      else
+        return job.name;
+    else 
+    return text_no;
+  }
   public void setFraction(Fraction fraction) {
     this.fraction=fraction;
   }
@@ -74,8 +84,10 @@ abstract class Object implements listened {
   abstract protected PImage getSpriteDatabase();
   protected String getNameDatabase(int id) {
     switch (id) {
-    case MINER: 
-      return text_object_miner;
+    case DRILL: 
+      return text_object_drill;
+    case WELL: 
+      return text_object_well;
     case REPAIR: 
       return text_object_repair;
     case CHARGE: 
@@ -244,7 +256,8 @@ class Layer extends Object {
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
-      text_material+": "+material.getName()+"\n";
+      text_material+": "+material.getName()+"\n"+
+      text_job+": "+isJob()+"\n";
   }
   protected void endDraw() {
     super.endDraw();
@@ -316,7 +329,8 @@ class Enviroment extends Object {
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
-      text_resource+": "+resource.getName()+" ("+count+")\n";
+      text_resource+": "+resource.getName()+" ("+count+")\n"+
+      text_job+": "+isJob()+"\n";
   }
   public int getCountResourcesDatabase() {
     return (int)random(1, 5);
@@ -335,7 +349,7 @@ class Enviroment extends Object {
     case BLOCK:
       return sprite_block_steel;
     case TREE:
-      return sprite_block_steel;
+      return sprite_tree;
     default:
       return none;
     }
@@ -348,14 +362,13 @@ class ItemMap extends Object {
   Item item;
   int count;
   boolean lock;
-  Job job;
+
 
   ItemMap (int x, int y, Item item, int count) {
     super (ITEM, x, y);
     this.item = item;
     this.count=count;
-    lock = true;
-    job=null;
+    lock = false;
     sprite = getSpriteDatabase();
   }
   public int getRotateMax() {
@@ -378,12 +391,14 @@ class ItemMap extends Object {
     return text_yes;
   }
 
+
   protected String getDescript() {
     return getName() +": "+item.name+"\n"+
       text_count+": "+count+"\n"+
       text_allow+": "+isAllow()+"\n"+
       text_stack+": "+item.stack+"\n"+
-      text_weight+": "+item.weight+" (общий: "+item.weight*count+")"+"\n";
+      text_weight+": "+item.weight+" (общий: "+item.weight*count+")"+"\n"+
+      text_job+": "+isJob()+"\n";
   }
   protected PImage getSpriteDatabase() {
     if (item!=null)
@@ -481,6 +496,7 @@ class Storage extends Wall {
 class Miner extends Enviroment {
   int progress, progressMax;
   Room.Sector sector;
+  IntList requestResource;
 
   Miner (int id, int x, int y, int direction) {
     super(id, x, y, direction); //убрать инициализацию ресурсы
@@ -489,15 +505,33 @@ class Miner extends Enviroment {
     count=2;
     sector=world.currentRoom.getSector(x, y);
     resource=new Item (sector.resource);
+    requestResource = getRequestResourceDatabase();
   }
   protected int getTick() {
     return 50;
   }
+  private IntList getRequestResourceDatabase() {
+    IntList list = new IntList ();
+    if (id==DRILL) {
+      list.append(Item.STEEL);
+      list.append(Item.COOPER);
+      list.append(Item.STONE);
+    } else if (id==WELL) 
+      list.append(Item.OIL);
+    return list;
+  }
   protected PImage getSpriteDatabase() {
-    return drill;
+    switch (id) {
+    case DRILL:
+      return sprite_object_drill;
+    case WELL:
+      return sprite_object_well;
+    default:
+      return none;
+    }
   }
   private boolean isPlaceRersource() {
-    if (sector.count>0) {
+    if (sector.count>0 && requestResource.hasValue(resource.id)) {
       ArrayList <Object> objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
       if (objects.isEmpty()) 
         return true;
@@ -549,6 +583,8 @@ class Miner extends Enviroment {
     if (!isPlaceRersource()) {
       if (sector.count<=0)
         return text_no_resources;
+        else if (!requestResource.hasValue(resource.id))
+        return text_no_request;
       else
         return text_no_place_free;
     } else 
@@ -589,7 +625,6 @@ class Droid extends Object {
   private float  energy, energyMax, energyLeak;
   private GraphList path;
   private Graph target, nextNode;
-  private Job job;
   public ItemList items;
   public IntList skills;
 
@@ -603,10 +638,9 @@ class Droid extends Object {
     pathFull = 0;
     target = nextNode = null;
     energyMax=getEnergyDatabase();
-    energy=energyMax/4;
+    energy=energyMax;
     energyLeak=0.01+random(0.09);
     items = new ItemList();
-    job=null;
     carryingCapacity=1;//(int)random(9)+1;
     skills = new IntList ();
     sprite = getSpriteDatabase();
@@ -950,7 +984,7 @@ class Support extends Object {
 
 class Build extends Object {
   Object build;
-  ItemIntList reciept;
+  ItemIntList reciept, items;
 
   Build (int id, Object build) {
     super(id, build.x, build.y, build.direction);
@@ -958,15 +992,41 @@ class Build extends Object {
     hp=0;
     sprite = getSpriteDatabase();
     reciept = build.getRecieptDatabase();
+    items = new ItemIntList();
   }
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
       text_object_build+": "+getBuildDescript()+"\n"+
-      text_reciept+": "+reciept.getNames()+"\n";
+      text_reciept+": "+reciept.getNames()+"\n"+
+      text_items+": "+getListNames()+"\n"+
+      text_job+": "+isJob()+"\n";
   }
+  private String getListNames() {
+    if (items.size()<=0)
+      return text_empty;
+    else 
+    return items.getNames();
+  }
+  public boolean isPermissionBuild() {
+    for (int part : reciept.sortItem()) {
+      if (items.calculationItem(part)<reciept.calculationItem(part)) 
+        return false;
+    }
+    return true;
+  }
+
+  public IntList getNeedItems() { 
+    IntList needItems = new IntList();
+    for (int part : reciept.sortItem()) {
+      if (items.calculationItem(part)<reciept.calculationItem(part)) 
+        needItems.append(part);
+    }
+    return needItems;
+  }
+
   private String getBuildDescript() {
-    return build.getNameShort();
+    return build.getName();
   }
   protected PImage getSpriteDatabase() {
     if (build!=null)
@@ -974,6 +1034,13 @@ class Build extends Object {
     else
       return none;
   }
+  public boolean isComplete() {
+    if (build.hp>=build.hpMax)
+      return true;
+    else 
+    return false;
+  }
+
   public void update() {
     build.hp=hp; 
     transparent=(int)map(build.hp, 0, build.hpMax, 70, 255);
@@ -1039,6 +1106,19 @@ class ObjectList extends ArrayList <Object> {
     return null;
   }
 
+
+  public ObjectList getStorageListFree() {
+    ObjectList objects= new ObjectList();
+    for (Object object : this) {
+      if (object instanceof Storage) {
+        Storage storage = (Storage) object;
+        if (storage.getCapacity()<storage.capacity)
+          objects.add(storage);
+      }
+    }
+    return objects;
+  }
+
   public Support getSupportFree(int type) {
     for (Object object : this) {
       if (object instanceof Support && object.id==type) {
@@ -1048,6 +1128,17 @@ class ObjectList extends ArrayList <Object> {
       }
     }
     return null;
+  }
+
+  public ObjectList getIsItem(int id) {
+    ObjectList objects= new ObjectList();
+    for (Object object : this) {
+      if (object instanceof Storage && object.job==null) {
+        if (((Storage)object).items.calculationItem(id)>0)
+          objects.add(object);
+      }
+    }
+    return objects;
   }
 
   public ObjectList getEnviroments() {
@@ -1062,17 +1153,18 @@ class ObjectList extends ArrayList <Object> {
 
   public Object getObjectDamaged() {
     for (Object object : this) {
-      if (object.hp<object.hpMax)
+      if (object.hp<object.hpMax && object.job==null)
         return object;
     }
     return null;
   }
-  public Object getObjectBuild() {
+  public ObjectList getObjectsBuild() {
+    ObjectList objectsBuild= new ObjectList();
     for (Object object : this) {
-      if (object instanceof Build)
-        return object;
+      if (object instanceof Build && object.job==null)
+        objectsBuild.add(object);
     }
-    return null;
+    return objectsBuild;
   }
   public ObjectList getObjectsPermissionRepair() {
     ObjectList objectsNoDroids= new ObjectList();
@@ -1083,24 +1175,24 @@ class ObjectList extends ArrayList <Object> {
     return objectsNoDroids;
   }
 
-  public Object getObjectsPermissionMine() {
+  public ObjectList getObjectsPermissionMine() {
+    ObjectList objectsMine= new ObjectList();
     for (Object object : this) {
-      //здесь будет условие определяющие какой объект окружения помечен на удаление
-      return object;
+      if (object.job==null) 
+        //здесь будет условие определяющие какой объект окружения помечен на удаление
+        objectsMine.add(object);
     }
-    return null;
+    return objectsMine;
   }
 
   public Object getNearestObject(int tx, int ty) {
     float [] dist=new float [this.size()];
     for (int i=0; i<this.size(); i++) 
       dist[i]=dist(this.get(i).x, this.get(i).y, tx, ty);
-    for (Object part : this) {
-      if (part instanceof Storage) {
-        float tdist = dist(part.x, part.y, tx, ty);
-        if (tdist==min(dist)) 
-          return part;
-      }
+    for (Object part : this) {  
+      float tdist = dist(part.x, part.y, tx, ty);
+      if (tdist==min(dist)) 
+        return part;
     }
 
     return null;
@@ -1117,8 +1209,8 @@ class ObjectList extends ArrayList <Object> {
         items.add(itemMap);
       } else {
         for (Job job : playerFraction.jobs) {
-          if (job instanceof JobCarry) {
-            JobCarry jobTrans = (JobCarry) job;
+          if (job instanceof JobCarryItemMap) {
+            JobCarryItemMap jobTrans = (JobCarryItemMap) job;
             if (!itemMap.equals(jobTrans.itemMap)) 
               items.add(itemMap);
           }

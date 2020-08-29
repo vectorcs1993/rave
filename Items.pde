@@ -6,7 +6,8 @@ class Item implements cloneable {
   protected int stack;
   protected final int weight;
   public PImage sprite;
-  static final int STEEL=0, WOOD=3, STONE=2, COOPER=1;
+  static final int STEEL=0,  COOPER=1, OIL=2, STONE=3, WOOD=4;
+  protected ItemIntList reciept;
 
   Item (int id) {
     this.id=id;
@@ -14,7 +15,18 @@ class Item implements cloneable {
     sprite= getSpriteDatabase();
     weight=1;
     stack=getStackDatabase();
+    reciept=getRecieptDatabase();
   }
+
+
+  public ItemIntList  getRecieptDatabase() {
+    ItemIntList items = new ItemIntList();
+    for (int i=0; i<2; i++)
+      items.append(Item.STEEL);
+    return items;
+  } 
+
+
 
   public cloneable clone() {
     return new Item (id);
@@ -32,6 +44,8 @@ class Item implements cloneable {
       return sprite_item_wood;
     case COOPER: 
       return sprite_item_cooper;
+    case OIL: 
+      return sprite_item_oil;
     default: 
       return none;
     }
@@ -44,6 +58,8 @@ class Item implements cloneable {
       return 15;
     case COOPER: 
       return 10;
+    case OIL: 
+      return 5;
     default: 
       return 1;
     }
@@ -86,19 +102,32 @@ class ItemIntList extends IntList {
 String getItemNameDatabase(int id) {
   switch (id) {
   case Item.STEEL: 
-    return text_res_steel;
+    return text_item_steel;
   case Item.WOOD: 
-    return text_res_wood;
+    return text_item_wood;
   case Item.COOPER: 
-    return text_res_cooper;
+    return text_item_cooper;
   case Item.STONE: 
-    return text_res_stone;
+    return text_item_stone;
+    case Item.OIL: 
+    return text_item_oil;
   default: 
     return text_no_name;
   }
 }
 
+class Project {
+  Item item;
+  int process, processMax;
+  String name;
 
+  Project (Item item) {
+    name = "Проект";
+    this.item=item;
+    processMax = 100;
+    process=0;
+  }
+}
 
 
 class ItemList extends ArrayList <Item> {
