@@ -15,7 +15,7 @@ abstract class Object implements listened {
   protected Timer timerTick; 
   protected Fraction fraction;
   public final static int  ITEM=1, LAYER=2, WALL=3, DOOR=4, 
-    STORAGE=5, BLOCK=6, REPAIR=7, CHARGE=8, BENCH=9, FLAG=10, BUILD=11, TREE=12, ACTOR=13, DRILL=14, WELL=15;  //классификация по id
+    STORAGE=5, BLOCK=6, REPAIR=7, CHARGE=8, BENCH=9, FLAG=10, BUILD=11, TREE=12, ACTOR=13, DRILL=14, WELL=15, FABRICA=16;  //классификация по id
   protected Job job;
 
   Object (int id, int x, int y) {
@@ -88,6 +88,8 @@ abstract class Object implements listened {
       return text_object_drill;
     case WELL: 
       return text_object_well;
+    case FABRICA: 
+      return text_object_fabrica;
     case REPAIR: 
       return text_object_repair;
     case CHARGE: 
@@ -311,12 +313,12 @@ class Wall extends Layer {
 }
 
 class Enviroment extends Object {
-  Item resource;
+  Item product;
   int count;
 
-  Enviroment(int id, int x, int y, int direction, int resource) {
+  Enviroment(int id, int x, int y, int direction, int product) {
     this(id, x, y, direction);
-    this.resource = new Item(resource);
+    this.product = new Item(product);
   }
   Enviroment(int id, int x, int y, int direction) {
     super(id, x, y, direction);
@@ -329,7 +331,7 @@ class Enviroment extends Object {
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
-      text_resource+": "+resource.getName()+" ("+count+")\n"+
+      text_resource+": "+product.getName()+" ("+count+")\n"+
       text_job+": "+isJob()+"\n";
   }
   public int getCountResourcesDatabase() {
@@ -337,7 +339,7 @@ class Enviroment extends Object {
   }
   protected void delete() {
     super.delete();
-    world.currentRoom.addItemHere(x, y, (Item)resource.clone(), count);
+    world.currentRoom.addItemHere(x, y, (Item)product.clone(), count);
   }
   protected void endDraw() {
     super.endDraw();
@@ -474,22 +476,144 @@ class Storage extends Wall {
     } 
     return none;
   }
+
   public void add(Item [] itemsList) {
     for (Item item : itemsList) 
       items.add(item);
   }
-  private String getListNames() {
-    if (items.isEmpty())
-      return text_empty;
-    else 
-    return items.getNames();
-  }
+
   protected String getDescript() {
     return super.getDescript()+
       text_capacity+": "+getCapacity()+"/"+capacity+"\n"+
-      text_items+": "+getListNames()+"\n";
+      text_items+": "+items.getNames()+"\n";
   }
 }
+
+
+
+
+class Fabrica extends Enviroment {
+  int progress, progressMax;
+  ItemIntList components, reciept;
+
+  Fabrica(int id, int x, int y, int direction) {
+    super(id, x, y, direction);
+    setProduct(Item.PLATE_COPPER, 120);
+    components = new ItemIntList();
+  }
+
+  public void setProduct(int id, int count) {
+    product = new Item(id);
+    this.count=count;
+    progress=0;
+    progressMax = product.getItemProgressMaxDatabase();
+    reciept =  product.getRecieptDatabase();
+  }
+
+  private boolean isPlace() {
+    ObjectList objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
+    if (objects.isEmpty()) 
+      return true;
+    else {
+      Object current = objects.get(0);
+      if (current instanceof Storage) {
+        if (((Storage)current).isFreeCapacity())
+          return true;
+        else 
+        return false;
+      } else if (current instanceof ItemMap) {
+        ItemMap itemMap = (ItemMap)current;
+        if (itemMap.item.id==product.id && itemMap.count<=product.stack-count) 
+          return true;
+        else 
+        return false;
+      } else 
+      return false;
+    }
+  }
+  public boolean isPermissionCreate() {
+    for (int part : reciept.sortItem()) {
+      if (components.calculationItem(part)<reciept.calculationItem(part)) 
+        return false;
+    }
+    return true;
+  }
+
+  protected PImage getSpriteDatabase() {
+    return sprite_object_fabrica;
+  }
+
+  protected String getDescript() {
+    return text_name+": "+getName()+"\n"+
+      text_status+": "+getHpStatus()+"\n"+
+      text_product+": "+isProductNull()+"\n"+
+      text_items+": "+components.getNames()+"\n"+
+      text_job+": "+isJob()+"\n";
+  }
+  protected int getTick() {
+    return 100;
+  }
+
+  public IntList getNeedItems() { 
+    IntList needItems = new IntList();
+    for (int part : reciept.sortItem()) {
+      if (components.calculationItem(part)<reciept.calculationItem(part)) 
+        needItems.append(part);
+    }
+    return needItems;
+  }
+
+  private String isProductNull() {
+    if (product!=null) {
+      return product.getName()+" ("+product.getItemStackDatabase()+")\n"+
+        text_reciept+": "+reciept.getNames()+"\n"+
+        text_count+": "+count+"\n"+
+        text_progress+": "+getPercent(progress, progressMax, 100)+" %\n"+
+        getStatus();
+    } else 
+    return text_no;
+  }
+
+  private String getStatus() {
+    if (!isPlace())
+      return text_no_place_free;
+    else {
+      if (isPermissionCreate()) 
+        return text_in_process;
+      else 
+      return text_no_components;
+    }
+  }
+
+  public void update() {
+    if (product!=null && count>0 && isPermissionCreate() && isPlace()) {
+      if (progress<progressMax) {
+        progress++;
+      } else {
+        progress=0;
+        world.getRoomCurrent().addItemHere(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1], (Item)product.clone(), product.getItemStackDatabase());
+        count-=product.getItemStackDatabase();
+        for (int part : reciept) {
+          if (components.hasValue(part))
+            components.remove(components.index(part));
+        }
+        if (count==0)
+          product=null;
+      }
+    }
+  }
+  protected void endDraw() {
+    super.endDraw();
+    drawStatus(5, hp, hpMax, green, red);
+    if (product!=null)
+      drawStatus(9, progress, progressMax, yellow, red);
+  }
+    public void drawSelected () {
+    super.drawSelected();
+    drawPlace(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
+  }
+}
+
 
 
 
@@ -504,7 +628,7 @@ class Miner extends Enviroment {
     progressMax=10;
     count=2;
     sector=world.currentRoom.getSector(x, y);
-    resource=new Item (sector.resource);
+    product=new Item (sector.resource);
     requestResource = getRequestResourceDatabase();
   }
   protected int getTick() {
@@ -514,7 +638,7 @@ class Miner extends Enviroment {
     IntList list = new IntList ();
     if (id==DRILL) {
       list.append(Item.STEEL);
-      list.append(Item.COOPER);
+      list.append(Item.COPPER);
       list.append(Item.STONE);
     } else if (id==WELL) 
       list.append(Item.OIL);
@@ -531,7 +655,7 @@ class Miner extends Enviroment {
     }
   }
   private boolean isPlaceRersource() {
-    if (sector.count>0 && requestResource.hasValue(resource.id)) {
+    if (sector.count>0 && requestResource.hasValue(product.id)) {
       ArrayList <Object> objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
       if (objects.isEmpty()) 
         return true;
@@ -544,7 +668,7 @@ class Miner extends Enviroment {
           return false;
         } else if (current instanceof ItemMap) {
           ItemMap itemMap = (ItemMap)current;
-          if (itemMap.item.id==resource.id && itemMap.count<=resource.stack-count) 
+          if (itemMap.item.id==product.id && itemMap.count<=product.stack-count) 
             return true;
           else 
           return false;
@@ -569,7 +693,7 @@ class Miner extends Enviroment {
       progress=0;
       if (isPlaceRersource()) {
         int newCount = constrain(count, 1, sector.count);
-        world.getRoomCurrent().addItemHere(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1], (Item)resource.clone(), newCount);
+        world.getRoomCurrent().addItemHere(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1], (Item)product.clone(), newCount);
         sector.count-=newCount;
       }
     }
@@ -583,7 +707,7 @@ class Miner extends Enviroment {
     if (!isPlaceRersource()) {
       if (sector.count<=0)
         return text_no_resources;
-        else if (!requestResource.hasValue(resource.id))
+      else if (!requestResource.hasValue(product.id))
         return text_no_request;
       else
         return text_no_place_free;
@@ -614,7 +738,7 @@ class Miner extends Enviroment {
     for (int i=0; i<4; i++) 
       resources.append(Item.STEEL);
     for (int i=0; i<10; i++) 
-      resources.append(Item.COOPER);
+      resources.append(Item.COPPER);
     return resources;
   }
 }
@@ -641,7 +765,7 @@ class Droid extends Object {
     energy=energyMax;
     energyLeak=0.01+random(0.09);
     items = new ItemList();
-    carryingCapacity=1;//(int)random(9)+1;
+    carryingCapacity=5;//(int)random(9)+1;
     skills = new IntList ();
     sprite = getSpriteDatabase();
   }
@@ -653,12 +777,6 @@ class Droid extends Object {
   }
   public float getEnergyDatabase() {
     return 50+random(49)+1;
-  }
-  private String getListNames() {
-    if (items.isEmpty())
-      return text_empty;
-    else 
-    return items.getNames();
   }
   public void addJob(Job job) {
     job.setWorker(this);
@@ -675,7 +793,7 @@ class Droid extends Object {
     return text_name+": "+name+"\n"+
       text_status+": "+getHpStatus()+"\n"+
       text_job+": "+getCurrentJob()+"\n"+
-      text_items+": "+getListNames()+"\n"+
+      text_items+": "+items.getNames()+"\n"+
       text_fraction+": "+getDescriptFraction()+"\n"+
       text_speed+": "+getSpeedAbs(speed)+" ("+speed+")"+"\n"+
       text_energy+": "+energy*100/energyMax+" %\n"+
@@ -999,21 +1117,25 @@ class Build extends Object {
       text_status+": "+getHpStatus()+"\n"+
       text_object_build+": "+getBuildDescript()+"\n"+
       text_reciept+": "+reciept.getNames()+"\n"+
-      text_items+": "+getListNames()+"\n"+
+      text_items+": "+items.getNames()+"\n"+
       text_job+": "+isJob()+"\n";
   }
-  private String getListNames() {
-    if (items.size()<=0)
-      return text_empty;
-    else 
-    return items.getNames();
-  }
+
   public boolean isPermissionBuild() {
     for (int part : reciept.sortItem()) {
       if (items.calculationItem(part)<reciept.calculationItem(part)) 
         return false;
     }
     return true;
+  }
+  
+    public void getSurpluses() {  //выбрасывает излишки предметов оставшиеся после строительства
+    for (int part : reciept.sortItem()) {
+      int countItem=items.calculationItem(part);
+      int countReciept=reciept.calculationItem(part);
+      if (countItem>countReciept) 
+        world.currentRoom.addItemOrder(x,y,new Item(part),countItem-countReciept);
+    }
   }
 
   public IntList getNeedItems() { 
@@ -1144,10 +1266,19 @@ class ObjectList extends ArrayList <Object> {
   public ObjectList getEnviroments() {
     ObjectList objects= new ObjectList();
     for (Object object : this) {
-      if (object instanceof Enviroment && !(object instanceof Miner))
+      if (object instanceof Enviroment && !(object instanceof Miner) && !(object instanceof Fabrica))
         objects.add(object);
     }
     return objects;
+  }
+
+  public ObjectList getObjectsFabrica() {  //получает список фабрик нуждающихся в 
+    ObjectList fabrics= new ObjectList();
+    for (Object object : this) {
+      if (object instanceof Fabrica && object.job==null)
+        fabrics.add(object);
+    }
+    return fabrics;
   }
 
 
@@ -1169,7 +1300,7 @@ class ObjectList extends ArrayList <Object> {
   public ObjectList getObjectsPermissionRepair() {
     ObjectList objectsNoDroids= new ObjectList();
     for (Object object : this) {
-      if ((!(object instanceof Droid) && !(object instanceof Enviroment)  && !(object instanceof Build)) || (object instanceof Miner))
+      if ((!(object instanceof Droid) && !(object instanceof Enviroment)  && !(object instanceof Build)) || (object instanceof Miner) || (object instanceof Fabrica))
         objectsNoDroids.add(object);
     }
     return objectsNoDroids;

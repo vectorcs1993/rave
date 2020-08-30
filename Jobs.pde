@@ -87,7 +87,7 @@ class JobPutItemMap extends Job {
     super();
     this.itemMap = itemMap;
     process = 0;
-    processMax= itemMap.count*itemMap.item.weight*3;
+    processMax= itemMap.item.weight*20;
     name = getNameDatabase();
   }
 
@@ -140,7 +140,7 @@ class JobPutItem extends Job {
     this.item = item;
     this.object = object;
     process = 0;
-    processMax= item.weight;
+    processMax= item.weight*20;
     name = getNameDatabase();
   }
   protected String getNameDatabase() {
@@ -225,26 +225,28 @@ class JobGetItem extends JobPutItem {   //работа по выгрузке п�
   JobGetItem(Object object, Item item) {
     super(object, item);
   }
-  
+
   protected String getNameDatabase() {
     return text_worker_get+" "+item.getName();
   }
-  
+
   public void update() {
     super.update();
     if (!isComplete())
       worker.setDirection(object.x, object.y);
   }
-  
+
   protected void action() {
-    for (int i=0; i<worker.items.calculationItem(item.id); i++) {
+    int count = worker.items.calculationItem(item.id);
+    for (int i=0; i<count; i++) {
       worker.items.remove(item);
       if (object instanceof Storage) {
         ((Storage)object).items.add(item);
       } else if  (object instanceof Build) {
         ((Build)object).items.append(item.id);
+      } else if  (object instanceof Fabrica) { 
+        ((Fabrica)object).components.append(item.id);
       }
-      
     }
     object.job=null;
   }
@@ -453,6 +455,7 @@ class JobBuildPrimary extends Job {
     object.build.hp=object.build.hpMax;
     world.currentRoom.add(object.build);
     world.currentRoom.remove(object);
+    object.getSurpluses();
   }
 
   public void update() {

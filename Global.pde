@@ -152,7 +152,7 @@ public final class World {
         if (((Build)currentRoom.currentObject).isComplete())
           currentRoom.currentObject=null;
       }
-        if (currentRoom.currentObject instanceof ItemMap) {
+      if (currentRoom.currentObject instanceof ItemMap) {
         if (((ItemMap)currentRoom.currentObject).count<=0)
           currentRoom.currentObject=null;
       }
@@ -424,6 +424,10 @@ public class Room {
           itemM.count+=count;
           count=0;
           return;
+        } else if (object instanceof Storage) {
+          for (int i=0; i<count; i++)
+            ((Storage)object).add(new Item(item.id));
+          break;
         }
       }
     }
@@ -490,6 +494,7 @@ public class Room {
     }
     return null;
   }
+
   public void setCurrentObject(int x, int y) {
     setCurrent(getObjects(x, y).get(0));
   }
@@ -508,10 +513,10 @@ public class Room {
     setCurrent(objects.get(next));
   }
 
-
   private void setCurrent(Object object) {
     currentObject=object;
   }
+
   public void resetSelect() {
     currentObject=null;
   }
@@ -524,7 +529,7 @@ public class Room {
       this.x=x;
       this.y=y;
       this.sprite=sprite;
-      resource=int(random(3));//Item.STEEL;
+      resource=int(random(3));
       count=100+int(random(120));
     }
 

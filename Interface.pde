@@ -217,10 +217,12 @@ class Button extends ObjectGui {
       case "getListResources" :
         text=world.currentRoom.getItemsList().getNames();
         if (text.isEmpty())
-          textLabel.loadText(text_empty, false);
-        else
-          textLabel.loadText(text, false);
+          textLabel.loadText(text_empty, true);
+        else 
+          textLabel.loadText(text, true);
+    
         break;
+        
       case "getListOther" :
         for (Object part : world.currentRoom.getEnviromentList()) 
           text+=part.getName()+"\n";

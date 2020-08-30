@@ -1,6 +1,6 @@
 Droid d1, d2, d3, d4, d5, d6;
-PImage tile, droid, sprite_object_drill,sprite_object_well, station_charge, station_repair, sprite_floor_steel, sprite_wall_steel, none, sprite_box_steel, sprite_box_wood, 
-  sprite_item_steel, sprite_item_wood, sprite_item_oil, sprite_item_cooper, sprite_block_steel, sprite_tree;
+PImage tile, droid, sprite_object_drill, sprite_object_well, sprite_object_fabrica, station_charge, station_repair, sprite_floor_steel, sprite_wall_steel, none, sprite_box_steel, sprite_box_wood, 
+  sprite_item_steel, sprite_item_plate_steel, sprite_item_plate_copper,sprite_item_rubber, sprite_item_wood, sprite_item_oil, sprite_item_copper, sprite_block_steel, sprite_tree;
 String time = "";
 int time_cur;
 
@@ -23,10 +23,14 @@ void setup() {
   station_charge = requestImage("sprites/station_charge.png");
   station_repair = requestImage("sprites/station_repair.png");
   sprite_item_wood = requestImage("sprites/item_wood.png");
-  sprite_item_cooper = requestImage("sprites/item_cooper.png");
-   sprite_item_oil = requestImage("sprites/item_oil.png");
+  sprite_item_copper = requestImage("sprites/item_copper.png");
+  sprite_item_plate_steel = requestImage("sprites/item_plate_steel.png");
+  sprite_item_plate_copper = requestImage("sprites/item_plate_copper.png");
+  sprite_item_oil = requestImage("sprites/item_oil.png");
+  sprite_item_rubber = requestImage("sprites/item_rubber.png");
   sprite_object_drill = requestImage("sprites/drill.png");
   sprite_object_well = requestImage("sprites/well.png");
+  sprite_object_fabrica = requestImage("sprites/fabrica.png");
   sprite_block_steel = requestImage("sprites/block_steel.png");
   sprite_tree = requestImage("sprites/tree.png");
   playerFraction = new Fraction (0, "Robocraft");
@@ -52,7 +56,7 @@ void setup() {
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 7, 12, 0));
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 21, 7, 0));
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 9, 12, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 18, 9, 0));
+  world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 18, 12, 0));
 
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 20, 20, 0));
   world.getRoomCurrent().add(new Storage(Object.STORAGE, Item.STEEL, 4, 20, 0));
@@ -60,23 +64,23 @@ void setup() {
   world.getRoomCurrent().add(new Miner(Object.WELL, 6, 6, 0));
   world.getRoomCurrent().add(new Miner(Object.DRILL, 7, 6, 0));
   world.getRoomCurrent().add(new Miner(Object.DRILL, 9, 6, 0));
-  
+
   world.getRoomCurrent().add(new Miner(Object.DRILL, 14, 3, 0));
 
   world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 20, 21, int(random(4)), Item.STEEL));
   world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 13, 11, int(random(4)), Item.STEEL));
   world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 18, 20, int(random(4)), Item.STEEL));
   world.getRoomCurrent().add(new Enviroment(Object.BLOCK, 17, 20, int(random(4)), Item.STEEL));
-  
-  world.getRoomCurrent().add(new Enviroment(Object.TREE, 10, 12, int(random(4)), Item.WOOD));
-   world.getRoomCurrent().add(new Enviroment(Object.TREE, 11, 13, int(random(4)), Item.WOOD));
-    world.getRoomCurrent().add(new Enviroment(Object.TREE, 19, 22, int(random(4)), Item.WOOD));
-     world.getRoomCurrent().add(new Enviroment(Object.TREE, 16, 15, int(random(4)), Item.WOOD));
-      world.getRoomCurrent().add(new Enviroment(Object.TREE, 17, 12, int(random(4)), Item.WOOD));
-       world.getRoomCurrent().add(new Enviroment(Object.TREE, 19, 11, int(random(4)), Item.WOOD));
-        world.getRoomCurrent().add(new Enviroment(Object.TREE, 20, 17, int(random(4)), Item.WOOD));
 
-    
+  world.getRoomCurrent().add(new Enviroment(Object.TREE, 10, 12, int(random(4)), Item.WOOD));
+  world.getRoomCurrent().add(new Enviroment(Object.TREE, 11, 13, int(random(4)), Item.RUBBER));
+  world.getRoomCurrent().add(new Enviroment(Object.TREE, 19, 22, int(random(4)), Item.WOOD));
+  world.getRoomCurrent().add(new Enviroment(Object.TREE, 16, 15, int(random(4)), Item.WOOD));
+  world.getRoomCurrent().add(new Enviroment(Object.TREE, 17, 12, int(random(4)), Item.WOOD));
+  world.getRoomCurrent().add(new Enviroment(Object.TREE, 19, 11, int(random(4)), Item.WOOD));
+  world.getRoomCurrent().add(new Enviroment(Object.TREE, 20, 17, int(random(4)), Item.WOOD));
+  world.getRoomCurrent().add(new Fabrica(Object.FABRICA, 18, 13, 0));
+
 
   world.getRoomCurrent().add(new Support(Object.CHARGE, 8, 20, 0));
   world.getRoomCurrent().add(new Support(Object.CHARGE, 9, 20, 0));
@@ -84,7 +88,7 @@ void setup() {
 
   world.getRoomCurrent().add(new Build(Object.BUILD, new Wall(Object.WALL, 0, 15, 20, 0)));
   world.getRoomCurrent().add(new Build(Object.BUILD, new Miner(Object.DRILL, 16, 22, 0)));
-  
+
   //===================
   d1=new Droid(Object.ACTOR, 1, 6);
   //d1.skills.append(Job.GUARD);
@@ -99,18 +103,19 @@ void setup() {
   //===================
   d4=new Droid(Object.ACTOR, 7, 0);
   d4.skills.append(Job.MINE);
+   d4.skills.append(Job.CARRY);
   d4.skills.append(Job.GUARD);
   //===================
   d5=new Droid(Object.ACTOR, 7, 3);
   d5.skills.append(Job.BUILD);
   //d5.skills.append(Job.MINE);
- d5.skills.append(Job.CARRY);
+  d5.skills.append(Job.CARRY);
   //d5.skills.append(Job.MAINTENANCE);
   //========================
   d6=new Droid(Object.ACTOR, 4, 3);
- d6.skills.append(Job.BUILD);
- d6.skills.append(Job.MAINTENANCE);
- d5.skills.append(Job.CARRY);
+  d6.skills.append(Job.BUILD);
+  d6.skills.append(Job.MAINTENANCE);
+  d6.skills.append(Job.CARRY);
 
   world.getRoomCurrent().add(d1);
   world.getRoomCurrent().add(d3);

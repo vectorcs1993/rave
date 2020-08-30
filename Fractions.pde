@@ -104,7 +104,40 @@ class Fraction {
           }
           if (droid.job!=null) //если работа определена то
             continue;  //перейти к следующему дрону
-          //=========================================
+          //=========================================если нет работ по переноске предметов к постройкам то
+          ObjectList objectsFabrica = world.currentRoom.objects.getObjectsFabrica();  //поиск объектов фабрик
+          for (Object object : objectsFabrica) {
+            Fabrica objectFabrica = (Fabrica)object;
+            
+            if (objectFabrica.product!=null) { //проверяем запущено ли производство предметов, если да, то
+              if (!objectFabrica.isPermissionCreate()) {
+                Item itemCarry=null;  //инициализируем объект предмет
+                Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
+                int needId = -1;
+                for (int part : objectFabrica.getNeedItems()) { //поиск предмета в контейнере
+                  if (world.currentRoom.getItemsList().getItem(part)!=null) { //если нужный предмет находится в каком либо контейнере, то
+                    needId=part; //переменной needId присваивается значение нужного предмета
+                    break;  //и останавливает поиск
+                  }
+                }
+                if (needId!=-1) {
+                  ObjectList storageIsItem = world.currentRoom.objects.getIsItem(needId); //ищем объект хранилища содержащий предмет
+                  if (!storageIsItem.isEmpty()) { 
+                    storageIsItemFree=(Storage)storageIsItem.get(0); //если объект хранилища найден
+                    itemCarry=((Storage)storageIsItemFree).items.getItem(needId); //извлекает из него необходимый предмет
+                  }
+                  if (storageIsItemFree!=null && itemCarry!=null) {  //если контейнер и необходимый предмет определены то
+                    JobCarryItem job = new JobCarryItem (storageIsItemFree, objectFabrica, itemCarry); //формирование задания
+                    droid.addJob(job);
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          if (droid.job!=null) //если работа определена то
+            continue;  //перейти к следующему дрону
+          //=========================================если нет работы по перноске предметов к фабрикам и заводам то
           Object objectCarry=null;
           ObjectList itemsFree = world.currentRoom.items.getItemNoLock();
           if (!itemsFree.isEmpty())

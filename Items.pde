@@ -6,7 +6,7 @@ class Item implements cloneable {
   protected int stack;
   protected final int weight;
   public PImage sprite;
-  static final int STEEL=0,  COOPER=1, OIL=2, STONE=3, WOOD=4;
+  static final int STEEL=0, COPPER=1, OIL=2, STONE=3, WOOD=4, PLATE_STEEL=5, PLATE_COPPER=6, RUBBER=7;
   protected ItemIntList reciept;
 
   Item (int id) {
@@ -19,10 +19,15 @@ class Item implements cloneable {
   }
 
 
-  public ItemIntList  getRecieptDatabase() {
+  public ItemIntList getRecieptDatabase() {
     ItemIntList items = new ItemIntList();
-    for (int i=0; i<2; i++)
-      items.append(Item.STEEL);
+    if (id==PLATE_STEEL) {
+      for (int i=0; i<2; i++)
+        items.append(Item.STEEL);
+    } else if (id==PLATE_COPPER) {
+      for (int i=0; i<3; i++)
+        items.append(Item.COPPER);
+    } 
     return items;
   } 
 
@@ -42,10 +47,16 @@ class Item implements cloneable {
       return sprite_item_steel;
     case WOOD: 
       return sprite_item_wood;
-    case COOPER: 
-      return sprite_item_cooper;
+    case COPPER: 
+      return sprite_item_copper;
     case OIL: 
       return sprite_item_oil;
+    case PLATE_STEEL: 
+      return sprite_item_plate_steel;
+    case PLATE_COPPER: 
+      return sprite_item_plate_copper;
+    case RUBBER: 
+      return sprite_item_rubber;
     default: 
       return none;
     }
@@ -56,13 +67,31 @@ class Item implements cloneable {
       return 10;
     case WOOD: 
       return 15;
-    case COOPER: 
+    case COPPER: 
       return 10;
     case OIL: 
       return 5;
+    case PLATE_STEEL: 
+      return 15;
+    case PLATE_COPPER: 
+      return 20;
+        case RUBBER: 
+      return 10;
     default: 
       return 1;
     }
+  }
+  private int getItemProgressMaxDatabase() {
+    if (id==PLATE_STEEL || id==PLATE_COPPER) 
+      return 100;
+    else
+      return 10;
+  }
+  private int getItemStackDatabase() {
+    if (id==PLATE_COPPER) 
+      return 2;
+    else
+      return 1;
   }
 }
 
@@ -70,15 +99,19 @@ class Item implements cloneable {
 class ItemIntList extends IntList {
 
   public String getNames() {  //сортирует по наименованию и возвращает список имен
-    String names="";
-    IntList inv = this.sortItem();
-    for (int k=0; k<inv.size(); k++) {
-      int i=inv.get(k);
-      names+=getItemNameDatabase(i)+" ("+this.calculationItem(i)+")";
-      if (k!=inv.size()-1)
-        names+=",\n";
+    if (this.size()==0)
+      return text_empty;
+    else {
+      String names="";
+      IntList inv = this.sortItem();
+      for (int k=0; k<inv.size(); k++) {
+        int i=inv.get(k);
+        names+=getItemNameDatabase(i)+" ("+this.calculationItem(i)+")";
+        if (k!=inv.size()-1)
+          names+=",\n";
+      }
+      return names;
     }
-    return names;
   }
   public IntList sortItem() { //сортирует и возвращает множество отсортированное
     IntList itemsList= new IntList(); 
@@ -105,12 +138,18 @@ String getItemNameDatabase(int id) {
     return text_item_steel;
   case Item.WOOD: 
     return text_item_wood;
-  case Item.COOPER: 
-    return text_item_cooper;
+  case Item.COPPER: 
+    return text_item_copper;
   case Item.STONE: 
     return text_item_stone;
-    case Item.OIL: 
+  case Item.OIL: 
     return text_item_oil;
+  case Item.PLATE_STEEL: 
+    return text_item_plate_steel;
+  case Item.PLATE_COPPER: 
+    return text_item_plate_copper;
+    case Item.RUBBER: 
+    return text_item_rubber;
   default: 
     return text_no_name;
   }
@@ -165,15 +204,19 @@ class ItemList extends ArrayList <Item> {
     }
   }
   public String getNames() {
-    String names="";
-    IntList inv = this.sortItem();
-    for (int k=0; k<inv.size(); k++) {
-      int i=inv.get(k);
-      names+=this.getItem(i).name+" ("+this.calculationItem(i)+")";
-      if (k!=inv.size()-1)
-        names+=",\n";
+    if (this.size()==0)
+      return text_empty;
+    else {
+      String names="";
+      IntList inv = this.sortItem();
+      for (int k=0; k<inv.size(); k++) {
+        int i=inv.get(k);
+        names+=this.getItem(i).name+" ("+this.calculationItem(i)+")";
+        if (k!=inv.size()-1)
+          names+=",\n";
+      }
+      return names;
     }
-    return names;
   }
 
 
