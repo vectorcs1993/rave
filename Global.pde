@@ -156,7 +156,6 @@ public final class World {
         if (((ItemMap)currentRoom.currentObject).count<=0)
           currentRoom.currentObject=null;
       }
-      currentRoom.update();
       playerFraction.update();
     }
     timerTick.tick();
@@ -265,9 +264,6 @@ public class Room {
   }
   public String getName() {
     return name;
-  }
-
-  public void update() {
   }
 
   ObjectList getObjects(Fraction fraction) {
@@ -529,7 +525,7 @@ public class Room {
       this.x=x;
       this.y=y;
       this.sprite=sprite;
-      resource=int(random(3));
+      resource=int(random(4));
       count=100+int(random(120));
     }
 

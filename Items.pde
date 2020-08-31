@@ -1,4 +1,5 @@
-
+PImage sprite_item_steel, sprite_item_plate_steel, sprite_item_plate_copper, sprite_item_rubber, sprite_item_wood, sprite_item_oil, sprite_item_copper, 
+  sprite_item_stone, sprite_item_block_stone;
 
 class Item implements cloneable {
   private final String name;
@@ -6,7 +7,8 @@ class Item implements cloneable {
   protected int stack;
   protected final int weight;
   public PImage sprite;
-  static final int STEEL=0, COPPER=1, OIL=2, STONE=3, WOOD=4, PLATE_STEEL=5, PLATE_COPPER=6, RUBBER=7;
+  static final int STEEL=0, COPPER=1, OIL=2, STONE=3, WOOD=4, PLATE_STEEL=5, PLATE_COPPER=6, RUBBER=7, BLOCK_STONE=8, BLOCK_STEEL=9, 
+    BLOCK_PLASTIC=10;
   protected ItemIntList reciept;
 
   Item (int id) {
@@ -27,6 +29,9 @@ class Item implements cloneable {
     } else if (id==PLATE_COPPER) {
       for (int i=0; i<3; i++)
         items.append(Item.COPPER);
+    } else if (id==BLOCK_STONE) {
+      for (int i=0; i<5; i++)
+        items.append(Item.STONE);
     } 
     return items;
   } 
@@ -49,6 +54,8 @@ class Item implements cloneable {
       return sprite_item_wood;
     case COPPER: 
       return sprite_item_copper;
+    case STONE:
+      return sprite_item_stone;
     case OIL: 
       return sprite_item_oil;
     case PLATE_STEEL: 
@@ -57,11 +64,13 @@ class Item implements cloneable {
       return sprite_item_plate_copper;
     case RUBBER: 
       return sprite_item_rubber;
+    case BLOCK_STONE:
+      return sprite_item_block_stone;
     default: 
       return none;
     }
   }
-  private int getStackDatabase() {
+  private int getStackDatabase() {  //стэк предмета, сколько в одной клетке может находиться одинаковых предметов
     switch (id) {
     case STEEL: 
       return 10;
@@ -69,25 +78,31 @@ class Item implements cloneable {
       return 15;
     case COPPER: 
       return 10;
+    case STONE: 
+      return 15;
     case OIL: 
       return 5;
     case PLATE_STEEL: 
       return 15;
     case PLATE_COPPER: 
       return 20;
-        case RUBBER: 
+    case BLOCK_STONE: 
+      return 20;
+    case RUBBER: 
       return 10;
     default: 
       return 1;
     }
   }
-  private int getItemProgressMaxDatabase() {
+  private int getItemProgressMaxDatabase() {  //скорость создания предмета
     if (id==PLATE_STEEL || id==PLATE_COPPER) 
       return 100;
+    else if (id==BLOCK_STONE)
+      return 200;
     else
       return 10;
   }
-  private int getItemStackDatabase() {
+  private int getItemStackDatabase() { //количество предметов создаваемых за раз
     if (id==PLATE_COPPER) 
       return 2;
     else
@@ -148,8 +163,10 @@ String getItemNameDatabase(int id) {
     return text_item_plate_steel;
   case Item.PLATE_COPPER: 
     return text_item_plate_copper;
-    case Item.RUBBER: 
+  case Item.RUBBER: 
     return text_item_rubber;
+  case Item.BLOCK_STONE: 
+    return text_item_block_stone;
   default: 
     return text_no_name;
   }

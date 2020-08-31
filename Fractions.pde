@@ -54,9 +54,7 @@ class Fraction {
           }
         } 
         if (droid.skills.hasValue(Job.MINE)) {  //работа по добыче ресурсов
-
           ObjectList objectsMine = world.currentRoom.objects.getEnviroments().getObjectsPermissionMine();
-
           if (!objectsMine.isEmpty()) {
             Object objectMine=objectsMine.getNearestObject(droid.x, droid.y);
             droid.addJob(new JobMine((Enviroment)objectMine));
@@ -108,7 +106,7 @@ class Fraction {
           ObjectList objectsFabrica = world.currentRoom.objects.getObjectsFabrica();  //поиск объектов фабрик
           for (Object object : objectsFabrica) {
             Fabrica objectFabrica = (Fabrica)object;
-            
+
             if (objectFabrica.product!=null) { //проверяем запущено ли производство предметов, если да, то
               if (!objectFabrica.isPermissionCreate()) {
                 Item itemCarry=null;  //инициализируем объект предмет
@@ -161,6 +159,17 @@ class Fraction {
           if (!patrol.path.isEmpty())
             droid.addJob(patrol);
           continue;
+        }
+
+        if (world.currentRoom.getObjectsNoDroids(droid.x, droid.y).getObjectStand()==null) {  //дрона которому не нашлась работа отправляет на стоянку
+          Object objectStand=null;
+          ObjectList standFree = world.currentRoom.layers.getLayerStandList();
+          if (!standFree.isEmpty()) 
+            objectStand=standFree.getNearestObject(droid.x, droid.y);
+          if (objectStand!=null) {
+            JobMove job = new JobMove(world.currentRoom.node[objectStand.x][objectStand.y]);
+            droid.addJob(job);
+          }
         }
       }
     }

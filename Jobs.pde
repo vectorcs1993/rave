@@ -16,7 +16,9 @@ abstract class Job {   //работа по перемещению
 
   abstract public boolean isComplete();  //проверка условия выполнения работы
   abstract protected String getNameDatabase(); //инициализация наименование работы
-  abstract public void update();  //обновления процесса выполнения работы
+  public void update() { //обновления процесса выполнения работы
+    name = getNameDatabase();
+  }
   public String getDescript() { //возвращает текущее описание работы включая отслеживаемые параметры
     return name;
   }
@@ -67,7 +69,7 @@ class JobMove extends Job {   //работа по перемещению
     return text_worker_move+" "+target.x+","+target.y;
   }
   public void update() {
-    name = getNameDatabase();
+    super.update();
     if (target.solid)
       target= getNeighboring(world.currentRoom.node[target.x][target.y], world.currentRoom.node[target.x][target.y]).get(0);
     if (worker!=null) {
@@ -121,6 +123,7 @@ class JobPutItemMap extends Job {
     itemMap.job=null;
   }
   public void update() {
+    super.update();
     if (process<processMax) {
       process++;
       worker.setEnergy();
@@ -170,6 +173,7 @@ class JobPutItem extends Job {
   }
 
   public void update() {
+    super.update();
     if (process<processMax) {
       process++;
       worker.setEnergy();
@@ -413,6 +417,7 @@ class JobMinePrimary extends Job {
     enviroment.delete();
   }
   public void update() {
+    super.update();
     if (enviroment.hp>0) {
       enviroment.hp--;
       worker.setEnergy();
@@ -459,6 +464,7 @@ class JobBuildPrimary extends Job {
   }
 
   public void update() {
+    super.update();
     if (object.hp<object.hpMax) {
       object.hp++;
       worker.setEnergy();

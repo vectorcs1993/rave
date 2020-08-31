@@ -137,7 +137,8 @@ abstract class Object implements listened {
     tick();
     this.draw();
   }
-  public abstract void update();
+  public void update() {
+  }
   public int getRotateMax() {
     return 3;
   }
@@ -177,9 +178,6 @@ abstract class Object implements listened {
     popStyle();  
     popMatrix();
   }
-
-
-
   protected void drawLock() {
     pushMatrix();
     translate(x*world.grid_size, y*world.grid_size);
@@ -242,33 +240,40 @@ abstract class Object implements listened {
 
 class Layer extends Object {
   final Item material;
+  private boolean stand;
 
   Layer(int id, int material, int x, int y, int direction) {
     super (id, x, y, direction);
     this.material=new Item (material);
     world.currentRoom.node[x][y].solid=false;
     sprite = getSpriteDatabase();
+    stand=true;
   }
 
   public String getNameShort() {
     return getName()+" ("+material.getName()+")";
   }
-  public void update() {
-  }
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
       text_material+": "+material.getName()+"\n"+
+      text_stand+": "+isStand()+"\n"+
       text_job+": "+isJob()+"\n";
   }
   protected void endDraw() {
     super.endDraw();
     drawHealthStatus();
   }
+  private String isStand() {
+    if (stand) 
+      return text_yes;
+    else
+      return text_no;
+  }
   protected PImage getSpriteDatabase() {
     if (material!=null) {
       switch (material.id) {
-      case Item.STEEL:
+      case Item.PLATE_STEEL:
         return sprite_floor_steel;
       case Item.WOOD:
         return sprite_floor_steel;
@@ -323,10 +328,8 @@ class Enviroment extends Object {
   Enviroment(int id, int x, int y, int direction) {
     super(id, x, y, direction);
     count=getCountResourcesDatabase();
-    sprite = getSpriteDatabase();
     world.currentRoom.node[x][y].solid=true;
-  }
-  public void update() {
+    sprite = getSpriteDatabase();
   }
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
@@ -343,18 +346,21 @@ class Enviroment extends Object {
   }
   protected void endDraw() {
     super.endDraw();
+    if (id==BLOCK && product!=null) {
+      pushMatrix();
+      translate(x*world.grid_size, y*world.grid_size);
+      image(product.sprite, 4, 4, 24, 24);
+      popMatrix();
+    }
     drawStatus(5, hp, hpMax, green, red);
   }
 
   protected PImage getSpriteDatabase() {
-    switch (id) {
-    case BLOCK:
-      return sprite_block_steel;
-    case TREE:
+    if (id==BLOCK) {
+      return sprite_block;
+    } else if (id==TREE) 
       return sprite_tree;
-    default:
-      return none;
-    }
+    else return none;
   }
 }
 
@@ -492,13 +498,12 @@ class Storage extends Wall {
 
 
 
-class Fabrica extends Enviroment {
-  int progress, progressMax;
-  ItemIntList components, reciept;
+class Fabrica extends Miner {
+  private ItemIntList components, reciept;
 
   Fabrica(int id, int x, int y, int direction) {
     super(id, x, y, direction);
-    setProduct(Item.PLATE_COPPER, 120);
+    setProduct(Item.BLOCK_STONE, 120);
     components = new ItemIntList();
   }
 
@@ -510,27 +515,6 @@ class Fabrica extends Enviroment {
     reciept =  product.getRecieptDatabase();
   }
 
-  private boolean isPlace() {
-    ObjectList objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
-    if (objects.isEmpty()) 
-      return true;
-    else {
-      Object current = objects.get(0);
-      if (current instanceof Storage) {
-        if (((Storage)current).isFreeCapacity())
-          return true;
-        else 
-        return false;
-      } else if (current instanceof ItemMap) {
-        ItemMap itemMap = (ItemMap)current;
-        if (itemMap.item.id==product.id && itemMap.count<=product.stack-count) 
-          return true;
-        else 
-        return false;
-      } else 
-      return false;
-    }
-  }
   public boolean isPermissionCreate() {
     for (int part : reciept.sortItem()) {
       if (components.calculationItem(part)<reciept.calculationItem(part)) 
@@ -549,9 +533,6 @@ class Fabrica extends Enviroment {
       text_product+": "+isProductNull()+"\n"+
       text_items+": "+components.getNames()+"\n"+
       text_job+": "+isJob()+"\n";
-  }
-  protected int getTick() {
-    return 100;
   }
 
   public IntList getNeedItems() { 
@@ -575,42 +556,36 @@ class Fabrica extends Enviroment {
   }
 
   private String getStatus() {
-    if (!isPlace())
-      return text_no_place_free;
-    else {
-      if (isPermissionCreate()) 
-        return text_in_process;
-      else 
-      return text_no_components;
-    }
+    if (product!=null) {
+      if (!isPlace(product.getItemStackDatabase()))
+        return text_no_place_free;
+      else {
+        if (isPermissionCreate()) 
+          return text_in_process;
+        else 
+        return text_no_components;
+      }
+    } else return text_empty;
   }
 
   public void update() {
-    if (product!=null && count>0 && isPermissionCreate() && isPlace()) {
-      if (progress<progressMax) {
-        progress++;
-      } else {
-        progress=0;
-        world.getRoomCurrent().addItemHere(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1], (Item)product.clone(), product.getItemStackDatabase());
-        count-=product.getItemStackDatabase();
-        for (int part : reciept) {
-          if (components.hasValue(part))
-            components.remove(components.index(part));
+    if (product!=null && count>0 && isPermissionCreate()) {
+      if (isPlace(product.getItemStackDatabase())) { 
+        if (progress<progressMax) {
+          progress++;
+        } else {
+          progress=0;
+          world.getRoomCurrent().addItemHere(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1], (Item)product.clone(), product.getItemStackDatabase());
+          count-=product.getItemStackDatabase();
+          for (int part : reciept) {
+            if (components.hasValue(part))
+              components.remove(components.index(part));
+          }
+          if (count==0)
+            product=null;
         }
-        if (count==0)
-          product=null;
       }
     }
-  }
-  protected void endDraw() {
-    super.endDraw();
-    drawStatus(5, hp, hpMax, green, red);
-    if (product!=null)
-      drawStatus(9, progress, progressMax, yellow, red);
-  }
-    public void drawSelected () {
-    super.drawSelected();
-    drawPlace(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
   }
 }
 
@@ -618,9 +593,9 @@ class Fabrica extends Enviroment {
 
 
 class Miner extends Enviroment {
-  int progress, progressMax;
-  Room.Sector sector;
-  IntList requestResource;
+  protected int progress, progressMax;
+  private Room.Sector sector;
+  private IntList requestResource;
 
   Miner (int id, int x, int y, int direction) {
     super(id, x, y, direction); //убрать инициализацию ресурсы
@@ -656,28 +631,36 @@ class Miner extends Enviroment {
   }
   private boolean isPlaceRersource() {
     if (sector.count>0 && requestResource.hasValue(product.id)) {
-      ArrayList <Object> objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
-      if (objects.isEmpty()) 
+      if (isPlace(count)) 
         return true;
-      else {
-        Object current = objects.get(0);
-        if (current instanceof Storage) {
-          if (((Storage)current).isFreeCapacity())
-            return true;
-          else 
-          return false;
-        } else if (current instanceof ItemMap) {
-          ItemMap itemMap = (ItemMap)current;
-          if (itemMap.item.id==product.id && itemMap.count<=product.stack-count) 
-            return true;
-          else 
-          return false;
-        } else 
+      else
         return false;
-      }
     } else 
     return false;
   }
+
+  protected boolean isPlace(int countItem) {
+    ArrayList <Object> objects = world.currentRoom.getObjects(getPlace(x, y, direction)[0], getPlace(x, y, direction)[1]);
+    if (objects.isEmpty()) 
+      return true;
+    else {
+      Object current = objects.get(0);
+      if (current instanceof Storage) {
+        if (((Storage)current).isFreeCapacity())
+          return true;
+        else 
+        return false;
+      } else if (current instanceof ItemMap) {
+        ItemMap itemMap = (ItemMap)current;
+        if (itemMap.item.id==product.id && itemMap.count<=product.stack-countItem) 
+          return true;
+        else 
+        return false;
+      } else 
+      return false;
+    }
+  }
+
 
   public void setDirectionNext() {
     if (direction<3) 
@@ -1128,13 +1111,13 @@ class Build extends Object {
     }
     return true;
   }
-  
-    public void getSurpluses() {  //выбрасывает излишки предметов оставшиеся после строительства
+
+  public void getSurpluses() {  //выбрасывает излишки предметов оставшиеся после строительства
     for (int part : reciept.sortItem()) {
       int countItem=items.calculationItem(part);
       int countReciept=reciept.calculationItem(part);
       if (countItem>countReciept) 
-        world.currentRoom.addItemOrder(x,y,new Item(part),countItem-countReciept);
+        world.currentRoom.addItemOrder(x, y, new Item(part), countItem-countReciept);
     }
   }
 
@@ -1185,6 +1168,15 @@ class ObjectList extends ArrayList <Object> {
         return object;
     }
     return null;
+  }
+
+
+  public boolean isDroid() {
+    for (Object object : this) {
+      if (object instanceof Droid)
+        return true;
+    }
+    return false;
   }
 
   public ObjectList getDroidListJobFree() {
@@ -1281,7 +1273,15 @@ class ObjectList extends ArrayList <Object> {
     return fabrics;
   }
 
-
+  public Object getObjectStand() {
+    for (Object object : this) {
+      if (object instanceof Layer) {
+        if (((Layer)object).stand)
+          return object;
+      }
+    }
+    return null;
+  }
   public Object getObjectDamaged() {
     for (Object object : this) {
       if (object.hp<object.hpMax && object.job==null)
@@ -1361,6 +1361,19 @@ class ObjectList extends ArrayList <Object> {
     }
     return items;
   }
+
+  public ObjectList getLayerStandList() {
+    ObjectList layers = new ObjectList();
+    for (Object object : this) {
+      if (object instanceof Layer) {
+        if (object.id==Object.LAYER && ((Layer)object).stand) 
+          layers.add(object);
+      }
+    }
+    return layers;
+  }
+
+
 
   public ObjectList getItemMapList() {
     ObjectList items = new ObjectList();
