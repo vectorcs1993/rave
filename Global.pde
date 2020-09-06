@@ -10,20 +10,21 @@ public final class World {
   private float scale;
   private int deltaX, deltaY;
   private boolean moveUnlock;
-  public boolean pause, showStatus;
+  public boolean pause, showStatus, input;
 
   private World (int x, int y, int size_window, int size, int grid_size) {
-    this.tick=50;
+    tick=50;
     this.size_window=size_window;
     this.grid_size=grid_size;
-    this.x_map=this.x_window=x+getCenterWindow();
-    this.y_map=this.y_window=y+getCenterWindow();
+    x_map=this.x_window=x+getCenterWindow();
+    y_map=this.y_window=y+getCenterWindow();
     this.size=size;
-    this.scale=1;
-    this.moveUnlock=false;
+    scale=1;
+    moveUnlock=false;
     global_id=0;
-    this.timerTick=new Timer();
+    timerTick=new Timer();
     rooms = new ArrayList<Room>(size);
+    input=true;
 
     for (int ix=0; ix<5; ix++) {
       for (int iy=0; iy<5; iy++) {
@@ -42,6 +43,12 @@ public final class World {
     return global_id;
   }
 
+  public boolean isPermissionInput() {   //запрещает или разрешает любой ВВОД от пользователя
+    if (input)
+      return true;
+    else
+      return false;
+  }
   void createLand() {
     int n=0;
     for (int ix=-5; ix<6; ix++) {
@@ -142,11 +149,9 @@ public final class World {
 
   public void update() {
     if (currentRoom!=null) {
-      if (currentRoom.currentObject!=null && (currentRoom.currentObject.hp>0 || currentRoom.currentObject instanceof Build))  //если выбран объект и он не уничтожен
-        textLabel.loadText(currentRoom.currentObject.getDescript(), true);
-      else {
-        currentRoom.currentObject=null;
-        textLabel.loadText(text_selected_objects, false);
+      if (currentRoom.currentObject!=null) {
+        if (currentRoom.currentObject.hp<=0 && !(currentRoom.currentObject instanceof Build))  //если выбран объект и он не уничтожен
+          currentRoom.currentObject=null;
       }
       if (currentRoom.currentObject instanceof Build) {
         if (((Build)currentRoom.currentObject).isComplete())
@@ -238,7 +243,7 @@ public final class World {
 public class Room {
   private int x, y, grid_size;
   private ArrayList <Sector> map;
-  public ObjectList objects, items, layers;
+  public ObjectList objects, items, layers, flags;
   private Object currentObject;
   private Graph [][] node;
   private String name; 
@@ -257,6 +262,7 @@ public class Room {
     objects = new ObjectList();
     items = new ObjectList ();
     layers = new ObjectList ();
+    flags = new ObjectList ();
     currentObject=null;
   }
   public void setName(int n) {
@@ -283,17 +289,18 @@ public class Room {
     for (Object object : getAllObjects()) 
       object.control();
 
-
-    if (getCurrentDroid()!=null) {
-      getCurrentDroid().drawView();
-      getCurrentDroid().drawPath();
+    if (getCurrentActor()!=null) {
+      getCurrentActor().drawView();
+      getCurrentActor().drawPath();
     }
     if (currentObject!=null) 
       currentObject.drawSelected();
   }
 
   public void add(Object object) {
-    if (object instanceof Layer && !(object instanceof Wall)) 
+    if (object instanceof Flag)
+      flags.add(object);
+    if ((object instanceof Layer) && !(object instanceof Wall)) 
       layers.add(object);
     else if (object instanceof ItemMap) 
       items.add(object);
@@ -302,6 +309,8 @@ public class Room {
   }
 
   public void remove(Object object) {
+    if (object instanceof Flag) 
+      flags.remove(object);
     if (object instanceof Layer && !(object instanceof Wall)) 
       layers.remove(object);
     else if (object instanceof ItemMap) 
@@ -330,10 +339,10 @@ public class Room {
 
 
 
-  public ArrayList <listened> getDroidsList() {
+  public ArrayList <listened> getActorsList() {
     ArrayList <listened> list = new ArrayList <listened> ();
     for (Object object : objects) {
-      if (object instanceof Droid && object instanceof listened)
+      if (object instanceof Actor && object instanceof listened)
         list.add(object);
     }
     return list;
@@ -387,7 +396,7 @@ public class Room {
       iy=ty+matrixShearch[matrixRadius[i]][1];
       if (ix<0 || iy<0)
         continue;
-      ObjectList objectsList = getObjectsNoDroids(ix, iy);
+      ObjectList objectsList = getObjectsNoActors(ix, iy);
       if (objectsList.isEmpty()) {
         addItem(ix, iy, item, count);
         return;
@@ -406,10 +415,9 @@ public class Room {
     }
   }
 
-
   public void addItemHere(int tx, int ty, Item item0, int count) {
     Item item=(Item) item0.clone();
-    ObjectList objectsList = getObjectsNoDroids(tx, ty);
+    ObjectList objectsList = getObjectsNoActors(tx, ty);
     if (objectsList.isEmpty()) {
       addItem(tx, ty, item, count);
       return;
@@ -430,7 +438,7 @@ public class Room {
   }
 
   public void addItem(int tx, int ty, Item item, int count) {
-    ObjectList objectsList = getObjectsNoDroids(tx, ty);
+    ObjectList objectsList = getObjectsNoActors(tx, ty);
     if (objectsList.isEmpty()) { //если нет ни одного объекта в координатах
       ItemMap itemMap =  new ItemMap(tx, ty, item, count);
       this.items.add(itemMap);
@@ -447,6 +455,7 @@ public class Room {
   public ObjectList getAllObjects() {
     ObjectList all = new ObjectList ();
     all.addAll(layers);
+    all.addAll(flags);
     all.addAll(items);
     all.addAll(objects);
     return all;
@@ -454,14 +463,24 @@ public class Room {
 
   public ObjectList getObjectsNoItems() {
     ObjectList all = new ObjectList ();
-    all.addAll(layers);
     all.addAll(objects);
+    all.addAll(flags);
+    all.addAll(layers);    
     return all;
   }
-  public ObjectList getObjectsNoDroids(int x, int y) {
+  public ObjectList getObjectsNoActors(int x, int y) {
     ObjectList list = new ObjectList ();
     for (Object object : getAllObjects()) {
-      if (x==object.x && y==object.y && !(object instanceof Droid))
+      if (x==object.x && y==object.y && !(object instanceof Actor))
+        list.add(object);
+    }
+    return list;
+  }
+
+  public ObjectList getObjectsActors(int x, int y) {
+    ObjectList list = new ObjectList ();
+    for (Object object : objects) {
+      if (x==object.x && y==object.y && object instanceof Actor)
         list.add(object);
     }
     return list;
@@ -473,40 +492,55 @@ public class Room {
       if (x==object.x && y==object.y)
         list.add(object);
     }
-    Object selectedBottom = list.getEntryBottom();
-    if (selectedBottom!=null) {
-      list.remove(selectedBottom);
-      list.add(0, selectedBottom);
-    }
     return list;
   }
 
-  public Droid getCurrentDroid() { //возвращает текущего выбранного дроида
+  public Actor getCurrentActor() { //возвращает текущего выбранного дроида
     if (currentObject==null)
       return null;
     for (Object object : objects) {
-      if (currentObject.equals(object) && object instanceof Droid)
-        return (Droid)object;
+      if (currentObject.equals(object) && object instanceof Actor)
+        return (Actor)object;
     }
     return null;
   }
 
   public void setCurrentObject(int x, int y) {
-    setCurrent(getObjects(x, y).get(0));
+    ObjectList objectList = getObjects(x, y);
+    setCurrent(objectList.get(objectList.size()-1));
   }
 
-  public void setNextCurrentObject(int x, int y) {
-    int next = 0;
-    ObjectList objects= getObjects(x, y);
-    for (int i=0; i<objects.size()-1; i++) {
-      Object object = objects.get(i);
-      if (currentObject.equals(object))
-        if (i==objects.size()-1) 
-          next=0;
-        else 
-        next=i+1;
+  public void setNextCurrentObject(int x, int y) { 
+    ObjectList layerList = new ObjectList();
+    ObjectList flagList = new ObjectList();
+    ObjectList itemList = new ObjectList();
+    ObjectList objectList = new ObjectList();
+    for (Object current : getObjects(x, y)) {
+      if (layers.contains(current))
+        layerList.add(current);
+      else if (flags.contains(current)) 
+        flagList.add(current);
+      else if (items.contains(current))
+        itemList.add(current);
+      else if (objects.contains(current)) 
+        objectList.add(current);
     }
-    setCurrent(objects.get(next));
+    ObjectList objectsInSector = new ObjectList ();
+    objectsInSector.addAll(objectList);
+    objectsInSector.addAll(itemList);
+    objectsInSector.addAll(flagList);
+    objectsInSector.addAll(layerList);
+    int next = 0;
+    for (int i=0; i<objectsInSector.size(); i++) {
+      Object object = objectsInSector.get(i);
+      if (currentObject.equals(object)) {
+        if (i<objectsInSector.size()-1) 
+          next=i+1;
+        else 
+        next=0;
+      }
+    }
+    setCurrent(objectsInSector.get(next));
   }
 
   private void setCurrent(Object object) {
@@ -526,9 +560,8 @@ public class Room {
       this.y=y;
       this.sprite=sprite;
       resource=int(random(4));
-      count=100+int(random(120));
+      count=10+int(random(20));
     }
-
     public void draw() {
       image(sprite, x*grid_size, y*grid_size);
     }

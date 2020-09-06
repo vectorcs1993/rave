@@ -2,7 +2,13 @@
 interface listened {
   public void drawList();
 }
-
+interface renamed {
+  public String getName();
+  public void setName(String name);
+}
+interface rotated {
+  public void setDirectionNext();
+}
 interface cloneable {
   public cloneable clone();
 }
@@ -15,7 +21,10 @@ abstract class Object implements listened {
   protected Timer timerTick; 
   protected Fraction fraction;
   public final static int  ITEM=1, LAYER=2, WALL=3, DOOR=4, 
-    STORAGE=5, BLOCK=6, REPAIR=7, CHARGE=8, BENCH=9, FLAG=10, BUILD=11, TREE=12, ACTOR=13, DRILL=14, WELL=15, FABRICA=16;  //классификация по id
+    STORAGE=5, BLOCK=6, REPAIR=7, CHARGE=8, BENCH=9, FLAG=10, BUILD=11, TREE=12, ACTOR=13, DRILL=14, WELL=15, FABRICA=16, POINT_GUARD=17, 
+    POINT_STAND=18;  //классификация по id
+
+  public final static int  ROTATE0=0, ROTATE90=1, ROTETE180=2, ROTATE270=3;  //углы поворота
   protected Job job;
 
   Object (int id, int x, int y) {
@@ -60,6 +69,9 @@ abstract class Object implements listened {
   public String getName() {
     return name;
   }
+  public void setName(String name) {
+    this.name=name;
+  }
   public String getNameShort() {
     return getName();
   }
@@ -90,6 +102,8 @@ abstract class Object implements listened {
       return text_object_well;
     case FABRICA: 
       return text_object_fabrica;
+    case BENCH: 
+      return text_object_bench;
     case REPAIR: 
       return text_object_repair;
     case CHARGE: 
@@ -108,6 +122,10 @@ abstract class Object implements listened {
       return text_object_block;
     case TREE: 
       return text_object_tree;
+    case POINT_GUARD: 
+      return text_object_point_guard;
+    case POINT_STAND: 
+      return text_object_point_stand;
     case ACTOR: 
       return text_object_actor;
     default: 
@@ -174,6 +192,7 @@ abstract class Object implements listened {
     pushStyle();
     textSize(10);
     textAlign(RIGHT, BOTTOM);
+    fill(white);
     text(count, world.grid_size-3, world.grid_size+2);
     popStyle();  
     popMatrix();
@@ -188,6 +207,15 @@ abstract class Object implements listened {
     line(world.grid_size-5, 5, 5, world.grid_size-5);
     popStyle();  
     popMatrix();
+  }
+
+  public void drawIndicator(boolean status) {
+    if (status)
+      fill(green);
+    else
+      fill(red);
+    stroke(black);
+    rect(3, 0, 5, 5);
   }
 
   public void drawPlace(int x, int y) {
@@ -238,18 +266,15 @@ abstract class Object implements listened {
   }
 } 
 
-class Layer extends Object {
+class Layer extends Object implements rotated {
   final Item material;
-  private boolean stand;
 
   Layer(int id, int material, int x, int y, int direction) {
     super (id, x, y, direction);
     this.material=new Item (material);
     world.currentRoom.node[x][y].solid=false;
     sprite = getSpriteDatabase();
-    stand=true;
   }
-
   public String getNameShort() {
     return getName()+" ("+material.getName()+")";
   }
@@ -257,19 +282,13 @@ class Layer extends Object {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
       text_material+": "+material.getName()+"\n"+
-      text_stand+": "+isStand()+"\n"+
       text_job+": "+isJob()+"\n";
   }
   protected void endDraw() {
     super.endDraw();
     drawHealthStatus();
   }
-  private String isStand() {
-    if (stand) 
-      return text_yes;
-    else
-      return text_no;
-  }
+
   protected PImage getSpriteDatabase() {
     if (material!=null) {
       switch (material.id) {
@@ -290,6 +309,48 @@ class Layer extends Object {
     return resources;
   }
 }
+
+class Flag extends Object implements rotated {
+  protected Actor user;
+
+  Flag (int id, int x, int y) {
+    super (id, x, y, 0);
+    user=null;
+    world.currentRoom.node[x][y].solid=false;
+    sprite = getSpriteDatabase();
+  }
+
+  private String isStand() {
+    if (user!=null) 
+      return user.name;
+    else
+      return text_nobody;
+  }
+
+  public void update () {
+    if (user!=null) {
+      if (user.x==x && user.y==y && user.job!=null)
+        user=null;
+    }
+  }
+
+  protected String getDescript() {
+    return text_name+": "+getName()+"\n"+
+      text_user+": "+isStand()+"\n";
+  }
+
+  protected PImage getSpriteDatabase() {
+    switch (id) {
+    case POINT_GUARD:
+      return sprite_object_point_guard;
+    case POINT_STAND:
+      return sprite_object_point_stand;
+    default:
+      return none;
+    }
+  }
+}
+
 
 class Wall extends Layer {
   Wall(int id, int material, int x, int y, int direction) {
@@ -318,8 +379,8 @@ class Wall extends Layer {
 }
 
 class Enviroment extends Object {
-  Item product;
-  int count;
+  protected Item product;
+  protected int count;
 
   Enviroment(int id, int x, int y, int direction, int product) {
     this(id, x, y, direction);
@@ -371,19 +432,24 @@ class ItemMap extends Object {
   int count;
   boolean lock;
 
-
-  ItemMap (int x, int y, Item item, int count) {
+  ItemMap (int x, int y, Item item) {
     super (ITEM, x, y);
     this.item = item;
-    this.count=count;
+    this.count=1;
     lock = false;
     sprite = getSpriteDatabase();
   }
+
+  ItemMap (int x, int y, Item item, int count) {
+    this(x, y, item);
+    this.count=count;
+  }
+
   public int getRotateMax() {
     return 0;
   }
 
-  protected void endDraw() { 
+  protected void endDraw() {
     popStyle();
     popMatrix();
     if (lock)
@@ -392,7 +458,7 @@ class ItemMap extends Object {
       drawCount(count);
   }
 
-  private String isAllow() {
+  protected String isAllow() {
     if (lock)
       return text_no;
     else 
@@ -408,8 +474,9 @@ class ItemMap extends Object {
       text_weight+": "+item.weight+" (общий: "+item.weight*count+")"+"\n"+
       text_job+": "+isJob()+"\n";
   }
+
   protected PImage getSpriteDatabase() {
-    if (item!=null)
+    if (item!=null) 
       return item.sprite;
     else 
     return none;
@@ -422,8 +489,32 @@ class ItemMap extends Object {
     }
   }
 }
+class ItemProjectMap extends ItemMap {
+  int progress, progressMax;
 
-class Storage extends Wall {
+  ItemProjectMap (int x, int y, Item item) {
+    super (x, y, item);
+    progress=0;
+    progressMax=100;
+  }
+  protected void beginDraw() {
+    transparent=(int)map(progress, 0, progressMax, 70, 255);
+    super.beginDraw();
+  }
+  protected String getDescript() {
+    return getName()+": "+text_item_project+"\n"+  
+      text_product+": "+item.name+"\n"+
+      text_progress+": "+getPercent(progress, progressMax, 100)+" %\n"+
+      text_allow+": "+isAllow()+"\n"+
+      text_job+": "+isJob()+"\n";
+  }
+    protected void endDraw() {
+    super.endDraw();
+    drawStatus(9, progress, progressMax, yellow, red);
+  }
+}
+
+class Storage extends Wall implements renamed {
   ItemList items = new ItemList();
   int capacity;
   Storage (int id, int material, int x, int y, int direction) {
@@ -491,7 +582,16 @@ class Storage extends Wall {
   protected String getDescript() {
     return super.getDescript()+
       text_capacity+": "+getCapacity()+"/"+capacity+"\n"+
-      text_items+": "+items.getNames()+"\n";
+      text_items+": "+items.getNames();
+  }
+
+  protected void endDraw() {
+    if (isFreeCapacity()) 
+      drawIndicator(true);
+    else 
+    drawIndicator(false);
+    popStyle();
+    popMatrix();
   }
 }
 
@@ -499,11 +599,12 @@ class Storage extends Wall {
 
 
 class Fabrica extends Miner {
-  private ItemIntList components, reciept;
+  private ItemIntList components;
+  protected ItemIntList reciept;
 
   Fabrica(int id, int x, int y, int direction) {
     super(id, x, y, direction);
-    setProduct(Item.BLOCK_STONE, 120);
+    setProduct(Item.BLOCK_STONE, 10);
     components = new ItemIntList();
   }
 
@@ -523,6 +624,14 @@ class Fabrica extends Miner {
     return true;
   }
 
+  public boolean isPermissionCarry() {
+    for (int part : reciept.sortItem()) {
+      if (components.calculationItem(part)<reciept.calculationItem(part)*count) 
+        return true;
+    }
+    return false;
+  }
+
   protected PImage getSpriteDatabase() {
     return sprite_object_fabrica;
   }
@@ -531,14 +640,14 @@ class Fabrica extends Miner {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
       text_product+": "+isProductNull()+"\n"+
-      text_items+": "+components.getNames()+"\n"+
+      text_items+": "+components.getNames()+
       text_job+": "+isJob()+"\n";
   }
 
   public IntList getNeedItems() { 
     IntList needItems = new IntList();
     for (int part : reciept.sortItem()) {
-      if (components.calculationItem(part)<reciept.calculationItem(part)) 
+      if (components.calculationItem(part)<reciept.calculationItem(part)*count) 
         needItems.append(part);
     }
     return needItems;
@@ -547,7 +656,7 @@ class Fabrica extends Miner {
   private String isProductNull() {
     if (product!=null) {
       return product.getName()+" ("+product.getItemStackDatabase()+")\n"+
-        text_reciept+": "+reciept.getNames()+"\n"+
+        text_reciept+": "+reciept.getNames()+
         text_count+": "+count+"\n"+
         text_progress+": "+getPercent(progress, progressMax, 100)+" %\n"+
         getStatus();
@@ -567,7 +676,12 @@ class Fabrica extends Miner {
       }
     } else return text_empty;
   }
-
+  protected void drawIndicator() {
+    if (product!=null || count>0)
+      drawIndicator(true);
+    else
+      drawIndicator(false);
+  }
   public void update() {
     if (product!=null && count>0 && isPermissionCreate()) {
       if (isPlace(product.getItemStackDatabase())) { 
@@ -590,9 +704,22 @@ class Fabrica extends Miner {
 }
 
 
+class Bench extends Fabrica {
+
+  Bench (int id, int x, int y, int direction) {
+    super(id, x, y, direction);
+    product=null;
+  }
+
+  protected PImage getSpriteDatabase() {
+    return sprite_object_bench;
+  }
+}
 
 
-class Miner extends Enviroment {
+
+
+class Miner extends Enviroment implements rotated {
   protected int progress, progressMax;
   private Room.Sector sector;
   private IntList requestResource;
@@ -681,10 +808,18 @@ class Miner extends Enviroment {
       }
     }
   }
+  protected void drawIndicator() {
+    if (sector.count>0)
+      drawIndicator(true);
+    else
+      drawIndicator(false);
+  }
   protected void endDraw() {
+    drawIndicator();
     super.endDraw();
     drawStatus(5, hp, hpMax, green, red);
-    drawStatus(9, progress, progressMax, yellow, red);
+    if (product!=null)
+      drawStatus(9, progress, progressMax, yellow, red);
   }
   private String isPlaceFree() {
     if (!isPlaceRersource()) {
@@ -727,7 +862,7 @@ class Miner extends Enviroment {
 }
 
 
-class Droid extends Object {
+class Actor extends Object implements renamed {
   private int speed, radiusView, carryingCapacity, pathFull;
   private float  energy, energyMax, energyLeak;
   private GraphList path;
@@ -735,7 +870,7 @@ class Droid extends Object {
   public ItemList items;
   public IntList skills;
 
-  Droid (int id, int x, int y) {
+  Actor (int id, int x, int y) {
     super(id, x, y);
     speed=40;//+int(random(1000));
     radiusView=int(random(5))+1;  //мин-1, макс-5
@@ -776,7 +911,7 @@ class Droid extends Object {
     return text_name+": "+name+"\n"+
       text_status+": "+getHpStatus()+"\n"+
       text_job+": "+getCurrentJob()+"\n"+
-      text_items+": "+items.getNames()+"\n"+
+      text_items+": "+items.getNames()+
       text_fraction+": "+getDescriptFraction()+"\n"+
       text_speed+": "+getSpeedAbs(speed)+" ("+speed+")"+"\n"+
       text_energy+": "+energy*100/energyMax+" %\n"+
@@ -908,6 +1043,8 @@ class Droid extends Object {
   }
   protected void endDraw() {
     super.endDraw();
+    if (!items.isEmpty())
+      image(items.get(0).sprite, x*world.grid_size, y*world.grid_size+6);
     drawHealthStatus();
     drawEnergyStatus();
   }
@@ -931,7 +1068,7 @@ class Droid extends Object {
           py=gy;
         }
         if ((ix!=0 || iy!=0) && ix>=-x && iy>=-y && x+ix<=world.getSize()-1 && iy+y<=world.getSize()-1) {  
-          if (world.currentRoom.getObject(gx, gy) instanceof Droid) {
+          if (world.currentRoom.getObject(gx, gy) instanceof Actor) {
             stroke(red);
             line(world.grid_size/2, world.grid_size/2, world.getAbsX(ix), world.getAbsY(iy) );
           } else 
@@ -1000,8 +1137,8 @@ class Droid extends Object {
 }
 
 
-class Support extends Object {
-  Droid user;
+class Support extends Object implements rotated {
+  Actor user;
 
   Support (int id, int x, int y, int direction) {
     super(id, x, y, direction);
@@ -1070,9 +1207,13 @@ class Support extends Object {
       text_user+": "+getUserDescript()+"\n";
   }
   protected void endDraw() {
+    if (isPlaceUser())
+      drawIndicator(true);
+    else
+      drawIndicator(false);
     super.endDraw();
     drawHealthStatus();
-    if (isPlaceUser())
+    if (isPlaceUser()) 
       drawLine(x, y, user.x, user.y, blue);
   }
   public void drawSelected () {
@@ -1095,13 +1236,14 @@ class Build extends Object {
     reciept = build.getRecieptDatabase();
     items = new ItemIntList();
   }
+
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
       text_object_build+": "+getBuildDescript()+"\n"+
-      text_reciept+": "+reciept.getNames()+"\n"+
-      text_items+": "+items.getNames()+"\n"+
-      text_job+": "+isJob()+"\n";
+      text_reciept+": "+reciept.getNames()+
+      text_items+": "+items.getNames()+
+      text_job+": "+isJob();
   }
 
   public boolean isPermissionBuild() {
@@ -1162,46 +1304,37 @@ class Build extends Object {
 
 class ObjectList extends ArrayList <Object> {
 
-  public Object getEntryBottom() {
+  public boolean isActor() {
     for (Object object : this) {
-      if (object instanceof Droid || object instanceof Storage || object instanceof Wall)
-        return object;
-    }
-    return null;
-  }
-
-
-  public boolean isDroid() {
-    for (Object object : this) {
-      if (object instanceof Droid)
+      if (object instanceof Actor)
         return true;
     }
     return false;
   }
 
-  public ObjectList getDroidListJobFree() {
+  public ObjectList getActorListJobFree() {
     ObjectList droids = new ObjectList ();
     for (Object object : this) {
-      if (object instanceof Droid) {
-        Droid droid = (Droid) object;
+      if (object instanceof Actor) {
+        Actor droid = (Actor) object;
         if (droid.job==null)
           droids.add(object);
       }
     }
     return droids;
   }
-  public ObjectList getDroidList() {
+  public ObjectList getActorList() {
     ObjectList droids = new ObjectList ();
     for (Object object : this) {
-      if (object instanceof Droid) 
+      if (object instanceof Actor) 
         droids.add(object);
     }
     return droids;
   }
-  public Droid getDroidJobFree() {
+  public Actor getActorJobFree() {
     for (Object object : this) {
-      if (object instanceof Droid) {
-        Droid droid = (Droid) object;
+      if (object instanceof Actor) {
+        Actor droid = (Actor) object;
         if (droid.job==null)
           return droid;
       }
@@ -1264,10 +1397,10 @@ class ObjectList extends ArrayList <Object> {
     return objects;
   }
 
-  public ObjectList getObjectsFabrica() {  //получает список фабрик нуждающихся в 
+  public ObjectList getObjectsFreeFabrica() {  //получает список свободных от работы фабрик нуждающихся в 
     ObjectList fabrics= new ObjectList();
     for (Object object : this) {
-      if (object instanceof Fabrica && object.job==null)
+      if (object instanceof Fabrica && object.job==null) 
         fabrics.add(object);
     }
     return fabrics;
@@ -1275,9 +1408,8 @@ class ObjectList extends ArrayList <Object> {
 
   public Object getObjectStand() {
     for (Object object : this) {
-      if (object instanceof Layer) {
-        if (((Layer)object).stand)
-          return object;
+      if (object.id==Object.POINT_STAND) {
+        return object;
       }
     }
     return null;
@@ -1298,12 +1430,13 @@ class ObjectList extends ArrayList <Object> {
     return objectsBuild;
   }
   public ObjectList getObjectsPermissionRepair() {
-    ObjectList objectsNoDroids= new ObjectList();
+    ObjectList objectsNoActors= new ObjectList();
     for (Object object : this) {
-      if ((!(object instanceof Droid) && !(object instanceof Enviroment)  && !(object instanceof Build)) || (object instanceof Miner) || (object instanceof Fabrica))
-        objectsNoDroids.add(object);
+      if ((!(object instanceof Actor) && !(object instanceof Enviroment)  && !(object instanceof Build)  && !(object instanceof Flag)) 
+        || (object instanceof Miner) || (object instanceof Fabrica))
+        objectsNoActors.add(object);
     }
-    return objectsNoDroids;
+    return objectsNoActors;
   }
 
   public ObjectList getObjectsPermissionMine() {
@@ -1353,7 +1486,7 @@ class ObjectList extends ArrayList <Object> {
   public ObjectList getItemNoLock() {
     ObjectList items = new ObjectList();
     for (Object object : this) {
-      if (object instanceof ItemMap) {
+      if (object instanceof ItemMap && !(object instanceof ItemProjectMap)) {
         ItemMap itemMap = (ItemMap)object;
         if (!itemMap.lock && itemMap.job==null)
           items.add(object);
@@ -1362,18 +1495,27 @@ class ObjectList extends ArrayList <Object> {
     return items;
   }
 
-  public ObjectList getLayerStandList() {
-    ObjectList layers = new ObjectList();
+  public ObjectList getFlagStandList() {
+    ObjectList flags= new ObjectList();
     for (Object object : this) {
-      if (object instanceof Layer) {
-        if (object.id==Object.LAYER && ((Layer)object).stand) 
-          layers.add(object);
+      if (object instanceof Flag) {
+        if (object.id==Object.POINT_STAND  && world.currentRoom.getObjects(object.x, object.y).getActorList().isEmpty() && ((Flag)object).user==null) 
+          flags.add(object);
       }
     }
-    return layers;
+    return flags;
   }
 
-
+  public ObjectList getFlagGuardList() {
+    ObjectList flags= new ObjectList();
+    for (Object object : this) {
+      if (object instanceof Flag) {
+        if (object.id==Object.POINT_GUARD  && world.currentRoom.getObjects(object.x, object.y).getActorList().isEmpty() && ((Flag)object).user==null) 
+          flags.add(object);
+      }
+    }
+    return flags;
+  }
 
   public ObjectList getItemMapList() {
     ObjectList items = new ObjectList();

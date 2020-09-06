@@ -1,41 +1,124 @@
+import de.bezier.guido.*;
 
-Button getListDroids;
+SimpleButton buttonLock, buttonRename, buttonRotate;
+
+WindowLabel windowInput;
+SimpleButton getListActors;
 RadioButton menuColony, menuColonyObjects, menuColonyFraction;
 Text textLabel, consoleLabel;
 void createInterface() {
-  Interface.level=Interface.id=0;
-  textLabel = new Text (391, 182, 400, 400, 0, white, black);
+  Interactive.make( this );
+  Interface.level=Interface.id=Interface.GAME;
+  textLabel = new Text (391, 182, 400, 400, 0, white, color(60));
   consoleLabel = new Text (world.x_map-world.getCenterWindow(), world.y_map+world.getCenterWindow()+5, world.x_map+world.getCenterWindow()-5, 160, 0, white, black);
-  menuColony = new RadioButton (5, 5, width-10, 32, 0, RadioButton.HORIZONTAL);
-  menuColony.addButtons(new Button [] {new Button(text_objects, "getMenuObjects"), 
-    new Button(text_buildings, "getListFabrics"), 
-    new Button(text_world, "getListDroids"), 
-    new Button(text_fraction, "getMenuFraction"), 
-    new Button(text_zone, "getListZone"), 
-    new Button(text_menu, "getListDroids")});
-  menuColonyObjects = new RadioButton (391, 42, 405, 128, 0, RadioButton.VERTICAL);
-  menuColonyObjects.addButtons(new Button [] {new Button(text_info, "getObjectInfo"), 
-    new Button(text_diagnostic, "getListFabrics"), 
-    new Button(text_cargo, "getListStorages"), 
-    new Button(text_job, "getListOther")});
-  menuColonyFraction = new RadioButton (391, 42, 405, 128, 0, RadioButton.VERTICAL);
-  menuColonyFraction.addButtons(new Button [] {new Button(text_info, "getFractionInfo"), 
-    new Button(text_job, "getListJobs"), 
-    new Button(text_zone, "getListFabrics"), 
-    new Button(text_resources, "getListResources")});
+  menuColony = new RadioButton (5, 5, width-10, 32, RadioButton.HORIZONTAL);
+  menuColony.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_objects, "getMenuObjects"), 
+    new SimpleRadioButton(text_buildings, ""), 
+    new SimpleRadioButton(text_world, ""), 
+    new SimpleRadioButton(text_fraction, "getMenuFraction"), 
+    new SimpleRadioButton(text_zone, ""), 
+    new SimpleRadioButton(text_menu, "")});
+  menuColonyObjects = new RadioButton (391, 42, 405, 128, RadioButton.VERTICAL);
+  menuColonyObjects.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_button_manager, "getObjectManager"), 
+    new SimpleRadioButton(text_info, "getObjectInfo"), 
+    new SimpleRadioButton(text_diagnostic, ""), 
+    new SimpleRadioButton(text_button_tasks, "")});
+  menuColonyFraction = new RadioButton (391, 42, 405, 128, RadioButton.VERTICAL);
+  menuColonyFraction.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_info, "getFractionInfo"), 
+    new SimpleRadioButton(text_job, "getListJobs"), 
+    new SimpleRadioButton(text_actors, "getListActors"), 
+    new SimpleRadioButton(text_resources, "getListResources")});
+
+  windowInput = null;
+
+
+
+
+  buttonRename = new SimpleButton(400, 206, 192, 32, text_button_rename, new Runnable() {
+    public void run() {
+      windowInput=new WindowLabel(text_input_value+":", (renamed)world.currentRoom.currentObject);
+    }
+  }
+  );
+  buttonLock = new SimpleButton(400, 206, 256, 32, text_button_lock_unlock, new Runnable() {
+    public void run() {
+      ItemMap itemMap = (ItemMap)world.currentRoom.currentObject;
+      itemMap.lock=!itemMap.lock;
+    }
+  }
+  );
+
+  buttonRotate = new SimpleButton(400, 239, 192, 32, text_button_rotate, new Runnable() {
+    public void run() {
+      rotated object = (rotated)world.currentRoom.currentObject;
+      object.setDirectionNext();
+    }
+  }
+  );
 }
 
 public void drawInterface() {
+  buttonLock.setActive(false);
+  buttonRename.setActive(false);
+  buttonRotate.setActive(false);
+  menuColonyObjects.setActive(false);
+  menuColonyFraction.setActive(false);
   menuColony.control();
   consoleLabel.draw();
-  if (menuColony.select.script.equals("getMenuObjects")) {
+
+  if (menuColony.select.event.equals("getMenuObjects")) {
+    menuColonyObjects.setActive(true);
     menuColonyObjects.control();
-    if (menuColonyObjects.select.script.equals("getObjectInfo"))
-      textLabel.control();
-  } else if (menuColony.select.script.equals("getMenuFraction")) {
+    if (world.currentRoom.currentObject!=null) {
+      if (menuColonyObjects.select.event.equals("getObjectInfo")) {
+        textLabel.draw();
+        textLabel.loadText(world.currentRoom.currentObject.getDescript(), true);
+      } else if (menuColonyObjects.select.event.equals("getObjectManager")) {
+        if (world.currentRoom.currentObject.id==Object.ACTOR || world.currentRoom.currentObject.id==Object.STORAGE) 
+          buttonRename.setActive(true);     
+        if (world.currentRoom.currentObject.id==Object.ITEM)
+          buttonLock.setActive(true);
+        if (world.currentRoom.currentObject instanceof rotated) 
+          buttonRotate.setActive(true);
+      }
+    } else {
+      textLabel.draw();
+      textLabel.loadText(text_selected_objects, false);
+    }
+  } else if (menuColony.select.event.equals("getMenuFraction")) {
+    menuColonyFraction.setActive(true);
     menuColonyFraction.control();
-    textLabel.control();
+    String text="";
+    if (menuColonyFraction.select.event.equals("getFractionInfo")) {
+      text = text_nikname+": "+ playerFraction.name+"\n"+
+        text_count_actors+": "+world.currentRoom.objects.getActorList().size()+"\n"+
+        text_free_droids+": "+world.currentRoom.objects.getActorListJobFree().size()+"\n";
+      textLabel.loadText(text, true);
+    } else if (menuColonyFraction.select.event.equals("getListJobs")) {
+      for (Job part : playerFraction.jobs) 
+        if (part.worker!=null)
+          text+=part.name+" ("+part.worker.name+")\n";
+        else
+          text+=part.name+" (не назначено)\n";
+      if (text.isEmpty())
+        textLabel.loadText(text_empty, false);
+      else
+        textLabel.loadText(text, true);
+    } else if (menuColonyFraction.select.event.equals("getListResources")) {
+      text=world.currentRoom.getItemsList().getNames();
+      if (text.isEmpty())
+        textLabel.loadText(text_empty, true);
+      else 
+      textLabel.loadText(text, true);
+    } else if (menuColonyFraction.select.event.equals("getListActors")) {
+      for (listened part : world.currentRoom.getActorsList()) 
+        text+=((Actor)part).getName()+"\n";
+      textLabel.loadText(text, true);
+    }
+    textLabel.draw();
   }
+  if (windowInput!=null)
+    windowInput.control();
 }
 
 
@@ -55,6 +138,7 @@ static class Interface {
   static public int level;
   static private ArrayList <ObjectGui> objects= new ArrayList <ObjectGui>();
   static public PFont font;
+  static final public int GAME=0, PAUSE=1, INPUT=2; 
 
   static public int getNewId() {
     id++; 
@@ -62,15 +146,6 @@ static class Interface {
   }
 
   static public void update() {
-    for (ObjectGui part : objects) {
-      if (part instanceof Button) {
-        ((Button)part).check(); 
-        break;
-      } else if (part instanceof RadioButton) {
-        ((RadioButton)part).check();
-        break;
-      }
-    }
   }
 
   static public void add(ObjectGui object ) {
@@ -110,11 +185,13 @@ abstract class ObjectGui implements mouseOvered {
   ObjectGui () {
     x=y=widthObj=heightObj=level=-1;
   }
-  public void control() {
-    draw();
+  public void setPositionDown(ObjectGui object) {
+    x=object.x;
+    y=object.y+object.heightObj+2;
   }
+
   public boolean isMouseOver() {
-    if ((mouseX>=x && mouseX<x+widthObj) && (mouseY>=y && mouseY<y+heightObj))
+    if (mouseButton!=RIGHT && world.isPermissionInput() && (mouseX>=x && mouseX<x+widthObj) && (mouseY>=y && mouseY<y+heightObj))
       return true;
     else 
     return false;
@@ -123,211 +200,76 @@ abstract class ObjectGui implements mouseOvered {
     if (mousePressed==true && isMouseOver() && level==Interface.level) return true;
     else return false;
   }
-
-  abstract protected void draw();
 }
 
 
 
 
-class Button extends ObjectGui {
-  protected String text, script;
-  protected boolean switchButton, flag;
-  private boolean pressedButton;
 
-  Button (int x, int y, int widthObj, int  heightObj, int level, String text, String script, boolean switchButton, boolean pressedButton) { //универсальный
-    super(x, y, widthObj, heightObj, level);
-    this.text=text;
-    this.script=script;
-    this.pressedButton=pressedButton;
-    this.switchButton=switchButton;
-    flag=false;
-  }
-  Button (String text, String script) {
-    super();  
-    this.text=text;
-    this.script=script;
-    pressedButton=switchButton=false;
-  }
 
-  public void control () {
-    check();
-    draw();
-  }
-
-  protected void check() {
-    if (!pressedButton && isClick()) 
-      event();
-  }
-
-  protected void draw() {
-    if (pressedButton && isClick())
-      event();
-    pushStyle();
-    pushMatrix();
-    strokeWeight(1);
-    textAlign(CENTER, CENTER);
-    color text_color, rect_color;
-    if (isClick() || flag) {
-      text_color=black;
-      rect_color=white;
-    } else {
-      text_color=white;
-      rect_color=black;
-    }
-    fill(rect_color);
-    rect(x, y, widthObj, heightObj);
-    fill(text_color);
-    textSize(14);
-    clip(x, y, widthObj+1, heightObj+1);
-    text(text, x+widthObj/2, y+heightObj/2-textDescent());
-    noClip();
-    popStyle();
-    popMatrix();
-  }
-
-  protected void event () {
-    if (switchButton) {
-      flag=!flag;
-    }
-    if (script!=null) {
-      String text="";
-      switch (script) {
-      case "getListDroids" :
-        for (listened part : world.currentRoom.getDroidsList()) 
-          text+=((Droid)part).getName()+"\n";
-        textLabel.loadText(text, true);
-        break;
-      case "getListFabrics" :
-        for (listened part : world.currentRoom.getFabricsList()) 
-          text+=((Miner)part).getName()+"\n";
-        if (text.isEmpty())
-          textLabel.loadText(text_empty, false);
-        else
-          textLabel.loadText(text, false);
-        break;
-      case "getListStorages" :
-        for (listened part : world.currentRoom.getStorageList()) 
-          text+=((Storage)part).getName()+"\n";
-        if (text.isEmpty())
-          textLabel.loadText(text_empty, false);
-        else
-          textLabel.loadText(text, false);
-        break;
-      case "getListResources" :
-        text=world.currentRoom.getItemsList().getNames();
-        if (text.isEmpty())
-          textLabel.loadText(text_empty, true);
-        else 
-          textLabel.loadText(text, true);
-    
-        break;
-        
-      case "getListOther" :
-        for (Object part : world.currentRoom.getEnviromentList()) 
-          text+=part.getName()+"\n";
-        if (text.isEmpty())
-          textLabel.loadText(text_empty, true);
-        else
-          textLabel.loadText(text, true);
-        break;
-      case "getFractionInfo" :
-        text = text_nikname+": "+ playerFraction.name+"\n"+
-          text_count_droids+": "+world.currentRoom.objects.getDroidList().size()+"\n"+
-          text_free_droids+": "+world.currentRoom.objects.getDroidListJobFree().size()+"\n";
-        textLabel.loadText(text, false);
-        break;
-      case "getListJobs" :
-        for (Job part : playerFraction.jobs) 
-          if (part.worker!=null)
-            text+=part.name+" ("+part.worker.name+")\n";
-          else
-            text+=part.name+" (не назначено)\n";
-        if (text.isEmpty())
-          textLabel.loadText(text_empty, false);
-        else
-          textLabel.loadText(text, true);
-        break;
-      }
-    }
-  }
-}
-
-class RadioButton extends ObjectGui {
+class RadioButton extends ActiveElement {
   int orientation;
-  Button select;
-  ArrayList <Button> buttons= new ArrayList <Button>();
+  SimpleRadioButton select;
+  ArrayList <SimpleRadioButton> buttons= new ArrayList <SimpleRadioButton>();
   final static int HORIZONTAL = 0;
   final static int VERTICAL= 1;
 
-  RadioButton  (int x, int y, int widthObj, int  heightObj, int level, int orientation) {
-    super(x, y, widthObj, heightObj, level);
+  RadioButton  (int x, int y, int widthObj, int  heightObj, int orientation) {
+    super(x, y, widthObj, heightObj);
     this.orientation = constrain(orientation, 0, 1);
   }
 
-  public void addButton(Button button) {
+  public void addButton(SimpleRadioButton button) {
     buttons.add(button);
     update();
   }
 
   public void control () {
-    check();
-    draw();
+    for (SimpleRadioButton button : buttons) {
+      if (button.pressed) 
+        setSelect(button);
+    }
+  }
+  public void setActive(boolean active) {
+    super.setActive(active);
+    for (SimpleRadioButton button : buttons)
+      button.setActive(active);
   }
 
-  public void addButtons(Button [] buttons) {
+  public void addButtons(SimpleRadioButton [] buttons) {
     this.buttons.clear();
-    for (Button button : buttons)
+    for (SimpleRadioButton button : buttons)
       this.buttons.add(button);
     update();
   }
 
-  protected void draw() {
-    for (Button button : buttons)
-      button.draw();
-  }
-
   private void update() {
     for (int i=0; i<buttons.size(); i++) {
-      Button button = buttons.get(i);
-      button.id=i;
-      button.switchButton=false;
-      button.pressedButton=false;
-      button.level=0;
+      SimpleRadioButton button = buttons.get(i);
       if (orientation==HORIZONTAL) {
-        int widthButton =  widthObj/buttons.size();
-        button.widthObj=widthButton;
-        button.heightObj=heightObj;
+        int widthButton = (int)width/buttons.size();
+        button.width=widthButton;
+        button.height=height;
         button.y=y;
-        button.x=x+i*widthButton;
+        button.x=x+i*(widthButton+1);
       } else if (orientation==VERTICAL) {
-        int heightButton =  heightObj/buttons.size();
-        button.heightObj=heightButton;
-        button.widthObj=widthObj;
+        int heightButton =  (int)height/buttons.size();
+        button.height=heightButton;
+        button.width=width;
         button.x=x;
-        button.y=y+i*heightButton;
+        button.y=y+i*(heightButton+1);
       }
     }
     setSelect(buttons.get(0));
   }
 
-  protected void setSelect(Button button) {
+  protected void setSelect(SimpleRadioButton button) {
     select=button;
-    for (Button part : buttons) {
+    for (SimpleRadioButton part : buttons) {
       if (part.equals(select)) 
-        part.flag=true;
+        part.on=true;
       else 
-      part.flag=false;
-    }
-    select.event();
-  }
-
-  protected void check() {
-    if (isClick()) {
-      for (Button button : buttons) {
-        if (button.isClick()) 
-          setSelect(button);
-      }
+      part.on=false;
     }
   }
 }
@@ -420,5 +362,99 @@ class Text extends ObjectGui implements scrollable {
   public void scrollUp() {
     if (getTextHeight()>=heightObj)
       yT=constrain(yT+=10, -getTextHeight(), 0);
+  }
+}
+
+
+class WindowLabel {
+  String message, input;
+  renamed object;
+  SimpleButton buttonOk;
+
+  WindowLabel (String message, renamed object) {
+    this.message=message;
+    this.object=object;
+    this.input=object.getName();
+    world.input=false;
+    world.pause=true;
+    buttonOk = new SimpleButton(100, 150, 128, 32, "Ok", new Runnable() {
+      public void run() {
+        windowInput.close();
+        windowInput=null;
+      }
+    }
+    );
+  }
+  public void close() {
+    world.input=true;
+    world.pause=false;
+    object.setName(input);
+    buttonOk.setActive(false);
+    buttonOk=null;
+  }
+  void control() {
+    pushMatrix();
+    pushStyle();
+    rectMode(CENTER);
+    translate(width/2, height/2);
+    fill(black);
+    rect(0, 0, 400, 300);
+    fill(white);
+    text(message, -150, -100);
+    text(">"+input+"<", -150, -50);
+    popStyle();
+    popMatrix();
+    buttonOk.setActive(true);
+  }
+}
+
+
+class SimpleButton extends ActiveElement {
+  boolean on;
+  String text;
+  Runnable script;
+
+  SimpleButton (float x, float y, float w, float h, String text, Runnable script) {
+    super(x, y, w, h);
+    this.text=text;
+    this.script=script;
+  }
+
+  void mousePressed () {
+    if (script!=null)
+      script.run();
+  }
+
+  void draw () {
+    pushStyle();
+    if ( hover )    
+      if (mousePressed ) 
+        stroke(color(90));
+      else 
+      stroke(white);
+    else noStroke();
+    if ( on ) fill( white );
+    else fill( color(60));
+    rect(x, y, width, height);
+    strokeWeight(1);
+    textAlign(CENTER, CENTER);
+    if ( on ) fill( color(60) );
+    else fill( white);
+    textSize(18);
+    text(text, x+this.width/2, y+this.height/2-textDescent());
+    popStyle();
+  }
+}
+
+class SimpleRadioButton extends SimpleButton {
+  String event;
+
+  SimpleRadioButton (String text, String event) {
+    super(133, 9, 1, 1, text, null);  
+    this.event=event;
+  }
+  void mouseClicked () {
+    if (mouseButton==LEFT)
+      on=!on;
   }
 }

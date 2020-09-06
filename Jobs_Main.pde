@@ -24,7 +24,7 @@ class JobCarryItem extends Job {  //работа по транспортиров
   protected String getNameDatabase() {
     return text_job_carry+" "+item.getName();
   }
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     super.setWorker(worker);
     moveToObject1.setWorker(worker);
     putItem.setWorker(worker);
@@ -86,7 +86,7 @@ class JobCarryItemMap extends Job {  //работа по транспортир�
     name = getNameDatabase();
     skill = Job.CARRY;
   }
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     super.setWorker(worker);
     itemMap.job=this;
     moveTo.setWorker(worker);
@@ -176,7 +176,7 @@ class JobSupport extends Job {   //работа по техническому о
     moveTo = new JobMove (world.currentRoom.node[getPlace(support.x, support.y, support.direction)[0]][getPlace(support.x, support.y, support.direction)[1]]);
     name = getNameDatabase();
   }
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     super.setWorker(worker);
     moveTo.setWorker(worker);
     support.setWorker(worker);
@@ -229,7 +229,7 @@ class JobMaintenance extends Job {   //работа по обслуживани�
   protected String getNameDatabase() {
     return text_job_maintenance;
   }
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     repair.object.job=this;
     super.setWorker(worker);
     moveTo.setWorker(worker);
@@ -273,7 +273,7 @@ class JobMine extends Job {   //работа по добыче ресурсов
   protected String getNameDatabase() {
     return text_mine;
   }
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     super.setWorker(worker);
     mine.enviroment.job=this;
     moveTo.setWorker(worker);
@@ -317,7 +317,7 @@ class JobBuild extends Job {   //работа по строительству о
   protected String getNameDatabase() {
     return text_job_build;
   }
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     build.object.job=this;
     super.setWorker(worker);
     moveTo.setWorker(worker);
@@ -338,6 +338,53 @@ class JobBuild extends Job {   //работа по строительству о
       worker.setDirection(build.object.x, build.object.y);
       if (!build.isComplete())  
         build.update();
+    }
+  }
+}
+
+
+
+
+class JobCraft extends Job {   //работа по созданию предмета
+  JobCraftPrimary craft;
+  JobMove moveTo;
+
+  JobCraft (ItemProjectMap object) {
+    super(); 
+    this.craft = new JobCraftPrimary(object);
+    moveTo = new JobMove (getNeighboring(world.currentRoom.node[object.x][object.y], world.currentRoom.node[object.x][object.y]).get(0));
+    name = getNameDatabase();
+  }
+  public boolean isComplete() {
+    if (craft.isComplete() && moveTo.isComplete())
+      return true;
+    else
+      return false;
+  }
+  protected String getNameDatabase() {
+    return text_job_build;
+  }
+  public void setWorker(Actor worker) {
+    craft.object.job=this;
+    super.setWorker(worker);
+    moveTo.setWorker(worker);
+    craft.setWorker(worker);
+  }
+  public String getDescript() {
+    if (!moveTo.isComplete() && !craft.isComplete())
+      return moveTo.name;
+    else if (moveTo.isComplete() && !craft.isComplete())
+      return craft.getDescript();
+    else
+      return text_job_wait;
+  }
+  public void update () {
+    if (!moveTo.isComplete())  
+      moveTo.update();
+    else {
+      worker.setDirection(craft.object.x, craft.object.y);
+      if (!craft.isComplete())  
+        craft.update();
     }
   }
 }

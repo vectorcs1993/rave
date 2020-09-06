@@ -28,8 +28,8 @@ class Fraction {
     ObjectList objectsFraction = world.currentRoom.getObjects(this);
 
     //главный алгоритм распределение работ
-    for (Object currentDroid : world.currentRoom.objects.getDroidList()) {
-      Droid droid = (Droid) currentDroid;
+    for (Object currentActor : world.currentRoom.objects.getActorList()) {
+      Actor droid = (Actor) currentActor;
 
       if (droid.job==null) {
         if (droid.isAlarmHealth()) {//HP
@@ -103,34 +103,34 @@ class Fraction {
           if (droid.job!=null) //если работа определена то
             continue;  //перейти к следующему дрону
           //=========================================если нет работ по переноске предметов к постройкам то
-          ObjectList objectsFabrica = world.currentRoom.objects.getObjectsFabrica();  //поиск объектов фабрик
+          ObjectList objectsFabrica = world.currentRoom.objects.getObjectsFreeFabrica();  //поиск объектов фабрик
           for (Object object : objectsFabrica) {
             Fabrica objectFabrica = (Fabrica)object;
 
             if (objectFabrica.product!=null) { //проверяем запущено ли производство предметов, если да, то
-              if (!objectFabrica.isPermissionCreate()) {
-                Item itemCarry=null;  //инициализируем объект предмет
-                Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
-                int needId = -1;
-                for (int part : objectFabrica.getNeedItems()) { //поиск предмета в контейнере
-                  if (world.currentRoom.getItemsList().getItem(part)!=null) { //если нужный предмет находится в каком либо контейнере, то
-                    needId=part; //переменной needId присваивается значение нужного предмета
-                    break;  //и останавливает поиск
-                  }
-                }
-                if (needId!=-1) {
-                  ObjectList storageIsItem = world.currentRoom.objects.getIsItem(needId); //ищем объект хранилища содержащий предмет
-                  if (!storageIsItem.isEmpty()) { 
-                    storageIsItemFree=(Storage)storageIsItem.get(0); //если объект хранилища найден
-                    itemCarry=((Storage)storageIsItemFree).items.getItem(needId); //извлекает из него необходимый предмет
-                  }
-                  if (storageIsItemFree!=null && itemCarry!=null) {  //если контейнер и необходимый предмет определены то
-                    JobCarryItem job = new JobCarryItem (storageIsItemFree, objectFabrica, itemCarry); //формирование задания
-                    droid.addJob(job);
-                    break;
-                  }
+              //  if (!objectFabrica.isPermissionCreate()) {
+              Item itemCarry=null;  //инициализируем объект предмет
+              Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
+              int needId = -1;
+              for (int part : objectFabrica.getNeedItems()) { //поиск предмета в контейнере
+                if (world.currentRoom.getItemsList().getItem(part)!=null) { //если нужный предмет находится в каком либо контейнере, то
+                  needId=part; //переменной needId присваивается значение нужного предмета
+                  break;  //и останавливает поиск
                 }
               }
+              if (needId!=-1) {
+                ObjectList storageIsItem = world.currentRoom.objects.getIsItem(needId); //ищем объект хранилища содержащий предмет
+                if (!storageIsItem.isEmpty()) { 
+                  storageIsItemFree=(Storage)storageIsItem.get(0); //если объект хранилища найден
+                  itemCarry=((Storage)storageIsItemFree).items.getItem(needId); //извлекает из него необходимый предмет
+                }
+                if (storageIsItemFree!=null && itemCarry!=null) {  //если контейнер и необходимый предмет определены то
+                  JobCarryItem job = new JobCarryItem (storageIsItemFree, objectFabrica, itemCarry); //формирование задания
+                  droid.addJob(job);
+                  break;
+                }
+              }
+              //}
             }
           }
           if (droid.job!=null) //если работа определена то
@@ -155,20 +155,22 @@ class Fraction {
         }
         if (droid.skills.hasValue(Job.GUARD)) {  //работа по охране территории
           JobPatrol patrol = new JobPatrol();
-          patrol.addPointRandom();
-          if (!patrol.path.isEmpty())
-            droid.addJob(patrol);
+          ObjectList flags = world.currentRoom.flags.getFlagGuardList();
+          for (Object flag : flags) 
+            patrol.addPoint(flag.x, flag.y);
+          droid.addJob(patrol);
           continue;
         }
 
-        if (world.currentRoom.getObjectsNoDroids(droid.x, droid.y).getObjectStand()==null) {  //дрона которому не нашлась работа отправляет на стоянку
+        if (world.currentRoom.getObjectsNoActors(droid.x, droid.y).getObjectStand()==null) {  //дрона которому не нашлась работа отправляет на стоянку
           Object objectStand=null;
-          ObjectList standFree = world.currentRoom.layers.getLayerStandList();
+          ObjectList standFree = world.currentRoom.flags.getFlagStandList();
           if (!standFree.isEmpty()) 
             objectStand=standFree.getNearestObject(droid.x, droid.y);
           if (objectStand!=null) {
             JobMove job = new JobMove(world.currentRoom.node[objectStand.x][objectStand.y]);
             droid.addJob(job);
+            ((Flag)objectStand).user=droid;
           }
         }
       }

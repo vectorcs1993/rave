@@ -4,7 +4,7 @@
 abstract class Job {   //работа по перемещению 
   protected final int id;
   protected String name;
-  protected Droid worker;
+  protected Actor worker;
   public final static int OTHER=-1, CARRY=0, BUILD=1, GUARD=2, REPAIR=3, MINE=4, CRAFT=5, CHARGE=6, MAINTENANCE=7;
   protected int skill;
 
@@ -22,7 +22,7 @@ abstract class Job {   //работа по перемещению
   public String getDescript() { //возвращает текущее описание работы включая отслеживаемые параметры
     return name;
   }
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     this.worker=worker;
   }
   public void reset() {
@@ -43,18 +43,20 @@ abstract class Job {   //работа по перемещению
 
 class JobMove extends Job {   //работа по перемещению 
   protected Graph target;
+  protected Object object;
 
   JobMove (Graph target) {
     super();
     this.target=target;
     name = getNameDatabase();
+    object=null;
   }
-
+  
   public boolean isComplete() {
     if (worker!=null) {
-      if (worker.x==target.x && worker.y==target.y) 
+      if (worker.x==target.x && worker.y==target.y) {
         return true;
-      else 
+      } else 
       return false;
     } else 
     return false;
@@ -279,9 +281,13 @@ class JobPatrol extends Job {   //работа по патрулировании
     path.add(curJob);
   }
 
+  
+
   private boolean addPointRandom() {
-    int rx = constrain((int)random(world.getSize()-1), 0, world.getSize()-1);
-    int ry = constrain((int)random(world.getSize()-1), 0, world.getSize()-1);
+    ObjectList flags = world.currentRoom.flags.getFlagGuardList();
+    Flag flag = (Flag)flags.get((int)random(flags.size()));
+    int rx = constrain(flag.x, 0, world.getSize()-1);
+    int ry = constrain(flag.y, 0, world.getSize()-1);
     if (!world.currentRoom.node[rx][ry].solid) {
       addPoint(rx, ry);
       return true;
@@ -289,7 +295,7 @@ class JobPatrol extends Job {   //работа по патрулировании
     return false;
   }
 
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     super.setWorker(worker);
     for (Job job : path)
       job.setWorker(worker);
@@ -337,7 +343,7 @@ class JobSupportPrimary extends Job {
     this.support = support;
     name = getNameDatabase();
   }
-  public void setWorker(Droid worker) {
+  public void setWorker(Actor worker) {
     super.setWorker(worker);
     support.user=worker;
   }
@@ -473,19 +479,49 @@ class JobBuildPrimary extends Job {
     }
   }
 }
-/*
-class JobEvacuation extends Job {
- JobMove moveTo, moveBack;
- Droid droid;
- Support support;
- JobEvacuation (Droid droid) {
- this.droid=droid;
- moveTo,
- }
- 
- }
- */
 
+class JobCraftPrimary extends Job {
+  ItemProjectMap object;
+
+  JobCraftPrimary(ItemProjectMap object) {
+    super();
+    this.object = object;
+    name = getNameDatabase();
+  }
+  protected String getNameDatabase() {
+    return text_worker_craft;
+  }
+  public String getDescript() {
+    return name+" "+getProcess()+" %";
+  }
+
+  public boolean isComplete() {
+    if (object.progress>=object.progressMax) 
+      return true;
+    else 
+    return false;
+  }
+  public int getProcess() {
+    return (int)map(object.progress, 0, object.progressMax, 0, 100);
+  }
+
+  protected void action() {
+    object.job=null;
+    world.currentRoom.addItemOrder(object.x,object.y,object.item,1);
+    object.count=0;
+    world.currentRoom.remove(object);
+  }
+
+  public void update() {
+    super.update();
+    if (object.progress<object.progressMax) {
+      object.progress++;
+      worker.setEnergy();
+      if (object.progress>=object.progressMax) 
+        action();
+    }
+  }
+}
 
 
 

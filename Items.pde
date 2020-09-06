@@ -1,5 +1,5 @@
 PImage sprite_item_steel, sprite_item_plate_steel, sprite_item_plate_copper, sprite_item_rubber, sprite_item_wood, sprite_item_oil, sprite_item_copper, 
-  sprite_item_stone, sprite_item_block_stone;
+  sprite_item_stone, sprite_item_block_stone, sprite_item_kit_repair;
 
 class Item implements cloneable {
   private final String name;
@@ -8,7 +8,7 @@ class Item implements cloneable {
   protected final int weight;
   public PImage sprite;
   static final int STEEL=0, COPPER=1, OIL=2, STONE=3, WOOD=4, PLATE_STEEL=5, PLATE_COPPER=6, RUBBER=7, BLOCK_STONE=8, BLOCK_STEEL=9, 
-    BLOCK_PLASTIC=10;
+    BLOCK_PLASTIC=10, KIT_REPAIR=11;
   protected ItemIntList reciept;
 
   Item (int id) {
@@ -66,6 +66,8 @@ class Item implements cloneable {
       return sprite_item_rubber;
     case BLOCK_STONE:
       return sprite_item_block_stone;
+       case KIT_REPAIR:
+      return sprite_item_kit_repair;
     default: 
       return none;
     }
@@ -111,11 +113,11 @@ class Item implements cloneable {
 }
 
 
-class ItemIntList extends IntList {
 
+class ItemIntList extends IntList {
   public String getNames() {  //сортирует по наименованию и возвращает список имен
     if (this.size()==0)
-      return text_empty;
+      return text_empty+"\n";
     else {
       String names="";
       IntList inv = this.sortItem();
@@ -124,6 +126,8 @@ class ItemIntList extends IntList {
         names+=getItemNameDatabase(i)+" ("+this.calculationItem(i)+")";
         if (k!=inv.size()-1)
           names+=",\n";
+           else 
+          names+="\n";
       }
       return names;
     }
@@ -167,23 +171,14 @@ String getItemNameDatabase(int id) {
     return text_item_rubber;
   case Item.BLOCK_STONE: 
     return text_item_block_stone;
+    case Item.KIT_REPAIR: 
+    return text_item_kit_repair;
   default: 
     return text_no_name;
   }
 }
 
-class Project {
-  Item item;
-  int process, processMax;
-  String name;
 
-  Project (Item item) {
-    name = "Проект";
-    this.item=item;
-    processMax = 100;
-    process=0;
-  }
-}
 
 
 class ItemList extends ArrayList <Item> {
@@ -221,16 +216,18 @@ class ItemList extends ArrayList <Item> {
     }
   }
   public String getNames() {
-    if (this.size()==0)
-      return text_empty;
+    if (this.isEmpty())
+      return text_empty+"\n";
     else {
       String names="";
       IntList inv = this.sortItem();
       for (int k=0; k<inv.size(); k++) {
         int i=inv.get(k);
-        names+=this.getItem(i).name+" ("+this.calculationItem(i)+")";
+        names+=this.getItem(i).getName()+" ("+this.calculationItem(i)+")";
         if (k!=inv.size()-1)
           names+=",\n";
+          else 
+          names+="\n";
       }
       return names;
     }
