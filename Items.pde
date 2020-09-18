@@ -1,100 +1,43 @@
-PImage sprite_item_steel, sprite_item_plate_steel, sprite_item_plate_copper, sprite_item_rubber, sprite_item_wood, sprite_item_oil, sprite_item_copper, 
-  sprite_item_stone, sprite_item_block_stone, sprite_item_kit_repair;
 
 class Item implements cloneable {
   private final String name;
   protected final int id;
   protected int stack;
   protected final int weight;
-  public PImage sprite;
+  public final PImage sprite;
   static final int STEEL=0, COPPER=1, OIL=2, STONE=3, WOOD=4, PLATE_STEEL=5, PLATE_COPPER=6, RUBBER=7, BLOCK_STONE=8, BLOCK_STEEL=9, 
-    BLOCK_PLASTIC=10, KIT_REPAIR=11;
+   BLOCK_PLASTIC=10, KIT_REPAIR=11;
   protected ItemIntList reciept;
 
   Item (int id) {
     this.id=id;
-    this.name = getItemNameDatabase(id);
+    name = getNameDatabase();
     sprite= getSpriteDatabase();
     weight=1;
     stack=getStackDatabase();
     reciept=getRecieptDatabase();
   }
 
-
-  public ItemIntList getRecieptDatabase() {
-    ItemIntList items = new ItemIntList();
-    if (id==PLATE_STEEL) {
-      for (int i=0; i<2; i++)
-        items.append(Item.STEEL);
-    } else if (id==PLATE_COPPER) {
-      for (int i=0; i<3; i++)
-        items.append(Item.COPPER);
-    } else if (id==BLOCK_STONE) {
-      for (int i=0; i<5; i++)
-        items.append(Item.STONE);
-    } 
-    return items;
+  protected PImage getSpriteDatabase() {
+    return data.items.getObjectDatabase(id).sprite;
+  }
+  protected String getNameDatabase() {
+    return data.items.getObjectDatabase(id).name;
+  }
+  public ItemIntList  getRecieptDatabase() {
+    return data.items.getObjectDatabase(id).reciept;
   } 
-
-
-
   public cloneable clone() {
     return new Item (id);
   }
-
   public String getName() {
     return name;
   }
-
-  private PImage getSpriteDatabase() {
-    switch (id) {
-    case STEEL: 
-      return sprite_item_steel;
-    case WOOD: 
-      return sprite_item_wood;
-    case COPPER: 
-      return sprite_item_copper;
-    case STONE:
-      return sprite_item_stone;
-    case OIL: 
-      return sprite_item_oil;
-    case PLATE_STEEL: 
-      return sprite_item_plate_steel;
-    case PLATE_COPPER: 
-      return sprite_item_plate_copper;
-    case RUBBER: 
-      return sprite_item_rubber;
-    case BLOCK_STONE:
-      return sprite_item_block_stone;
-       case KIT_REPAIR:
-      return sprite_item_kit_repair;
-    default: 
-      return none;
-    }
-  }
   private int getStackDatabase() {  //стэк предмета, сколько в одной клетке может находиться одинаковых предметов
-    switch (id) {
-    case STEEL: 
-      return 10;
-    case WOOD: 
-      return 15;
-    case COPPER: 
-      return 10;
-    case STONE: 
-      return 15;
-    case OIL: 
-      return 5;
-    case PLATE_STEEL: 
-      return 15;
-    case PLATE_COPPER: 
-      return 20;
-    case BLOCK_STONE: 
-      return 20;
-    case RUBBER: 
-      return 10;
-    default: 
-      return 1;
-    }
+  return data.items.getObjectDatabase(id).stack;
+  }
+    private int getOutputDatabase() {  //стэк предмета, сколько в одной клетке может находиться одинаковых предметов
+  return data.items.getObjectDatabase(id).output;
   }
   private int getItemProgressMaxDatabase() {  //скорость создания предмета
     if (id==PLATE_STEEL || id==PLATE_COPPER) 
@@ -104,18 +47,19 @@ class Item implements cloneable {
     else
       return 10;
   }
-  private int getItemStackDatabase() { //количество предметов создаваемых за раз
-    if (id==PLATE_COPPER) 
-      return 2;
-    else
-      return 1;
-  }
+}
+
+void setComponent(ItemIntList items, int id, int count) {
+  for (int i=0; i<count; i++)
+    items.append(id);
 }
 
 
 
+
 class ItemIntList extends IntList {
-  public String getNames() {  //сортирует по наименованию и возвращает список имен
+
+  public String getNames(Database.DatabaseItemList data) {  //сортирует по наименованию и возвращает список имен
     if (this.size()==0)
       return text_empty+"\n";
     else {
@@ -123,11 +67,11 @@ class ItemIntList extends IntList {
       IntList inv = this.sortItem();
       for (int k=0; k<inv.size(); k++) {
         int i=inv.get(k);
-        names+=getItemNameDatabase(i)+" ("+this.calculationItem(i)+")";
+        names+=data.getObjectDatabase(i).name+" ("+this.calculationItem(i)+")";
         if (k!=inv.size()-1)
           names+=",\n";
-           else 
-          names+="\n";
+        else 
+        names+="\n";
       }
       return names;
     }
@@ -151,32 +95,6 @@ class ItemIntList extends IntList {
 }
 
 
-String getItemNameDatabase(int id) {
-  switch (id) {
-  case Item.STEEL: 
-    return text_item_steel;
-  case Item.WOOD: 
-    return text_item_wood;
-  case Item.COPPER: 
-    return text_item_copper;
-  case Item.STONE: 
-    return text_item_stone;
-  case Item.OIL: 
-    return text_item_oil;
-  case Item.PLATE_STEEL: 
-    return text_item_plate_steel;
-  case Item.PLATE_COPPER: 
-    return text_item_plate_copper;
-  case Item.RUBBER: 
-    return text_item_rubber;
-  case Item.BLOCK_STONE: 
-    return text_item_block_stone;
-    case Item.KIT_REPAIR: 
-    return text_item_kit_repair;
-  default: 
-    return text_no_name;
-  }
-}
 
 
 
@@ -226,8 +144,8 @@ class ItemList extends ArrayList <Item> {
         names+=this.getItem(i).getName()+" ("+this.calculationItem(i)+")";
         if (k!=inv.size()-1)
           names+=",\n";
-          else 
-          names+="\n";
+        else 
+        names+="\n";
       }
       return names;
     }

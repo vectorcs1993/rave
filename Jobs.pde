@@ -25,8 +25,6 @@ abstract class Job {   //работа по перемещению
   public void setWorker(Actor worker) {
     this.worker=worker;
   }
-  public void reset() {
-  }
   public String getTextSkillDatabase() {
     switch (skill) {
     case CARRY: 
@@ -43,15 +41,13 @@ abstract class Job {   //работа по перемещению
 
 class JobMove extends Job {   //работа по перемещению 
   protected Graph target;
-  protected Object object;
 
   JobMove (Graph target) {
     super();
     this.target=target;
     name = getNameDatabase();
-    object=null;
   }
-  
+
   public boolean isComplete() {
     if (worker!=null) {
       if (worker.x==target.x && worker.y==target.y) {
@@ -73,7 +69,7 @@ class JobMove extends Job {   //работа по перемещению
   public void update() {
     super.update();
     if (target.solid)
-      target= getNeighboring(world.currentRoom.node[target.x][target.y], world.currentRoom.node[target.x][target.y]).get(0);
+      target= getNeighboring(world.currentRoom.node[target.x][target.y], null).get(0);
     if (worker!=null) {
       if (!worker.path.isEmpty()) 
         worker.moveNextPoint();
@@ -213,14 +209,14 @@ class JobGetItemMap extends JobPutItemMap {   //работа по выгрузк
       if (i<freeCapacity) 
         storage.items.add(newItem);
       else {
-        world.currentRoom.addItemOrder(worker.x, worker.y, newItem, 1);
+        world.currentRoom.addItemOrder(worker.x, worker.y, newItem.id, 1);
       }
     }
     if (!worker.items.isEmpty()) {
       for (int i=worker.items.size()-1; i>=0; i--) {
         Item item = worker.items.get(i);
         worker.items.removeItemCount(item, 1);
-        world.currentRoom.addItemOrder(worker.x, worker.y, item, 1);
+        world.currentRoom.addItemOrder(worker.x, worker.y, item.id, 1);
       }
     }
   }
@@ -281,7 +277,7 @@ class JobPatrol extends Job {   //работа по патрулировании
     path.add(curJob);
   }
 
-  
+
 
   private boolean addPointRandom() {
     ObjectList flags = world.currentRoom.flags.getFlagGuardList();
@@ -481,50 +477,108 @@ class JobBuildPrimary extends Job {
 }
 
 class JobCraftPrimary extends Job {
-  ItemProjectMap object;
+  Bench bench;
 
-  JobCraftPrimary(ItemProjectMap object) {
-    super();
-    this.object = object;
+  JobCraftPrimary (Bench bench) {
+    super(); 
+    this.bench = bench;
+    bench.progress=0;
     name = getNameDatabase();
   }
+
   protected String getNameDatabase() {
     return text_worker_craft;
   }
   public String getDescript() {
-    return name+" "+getProcess()+" %";
-  }
-
-  public boolean isComplete() {
-    if (object.progress>=object.progressMax) 
-      return true;
-    else 
-    return false;
+    return name+" "+bench.product.name+" "+getProcess()+" %";
   }
   public int getProcess() {
-    return (int)map(object.progress, 0, object.progressMax, 0, 100);
+    return (int)map(bench.progress, 0, bench.progressMax, 0, 100);
+  }
+  public boolean isComplete() {
+    if (bench.progress>=bench.progressMax) {
+      return true;
+    } else
+      return false;
   }
 
   protected void action() {
-    object.job=null;
-    world.currentRoom.addItemOrder(object.x,object.y,object.item,1);
-    object.count=0;
-    world.currentRoom.remove(object);
+    bench.job=null;
+    bench.placeProduct();
   }
 
-  public void update() {
+  public void update () {
     super.update();
-    if (object.progress<object.progressMax) {
-      object.progress++;
-      worker.setEnergy();
-      if (object.progress>=object.progressMax) 
-        action();
+    if (bench.isPlaceWorker()) {
+      if (bench.progress<bench.progressMax) {
+        bench.progress++;
+        worker.setEnergy();
+        if (isComplete()) 
+          action();
+      }
     }
   }
 }
 
 
+class JobMoveObject extends Job {
+  Object moveObject, targetObject;
+  JobMove move, moveTo, moveBack;
 
+  JobMoveObject (Object moveObject, Object targetObject) {
+    super();
+    this.moveObject=moveObject;
+    this.targetObject=targetObject;
+    move=moveTo= new JobMove(getNeighboring(world.currentRoom.node[moveObject.x][moveObject.y], null).get(0));
+    moveBack= new JobMove(getNeighboring(world.currentRoom.node[targetObject.x][targetObject.y], null).get(0));
+    name = getNameDatabase();
+  }
+  public boolean isComplete() {
+    if (moveBack.isComplete() && moveObject.x==targetObject.x && moveObject.y==targetObject.y)
+      return true;
+    else
+      return false;
+  }
+  protected String getNameDatabase() {
+    return text_worker_move_object+" "+moveObject.getName();
+  }
+  public void setWorker(Actor worker) {
+    super.setWorker(worker);
+    moveTo.setWorker(worker);
+    moveBack.setWorker(worker);
+    moveObject.job=targetObject.job=this;
+  }
+  public String getDescript() {
+    if (!moveTo.isComplete())
+      return moveTo.name;
+    else if (moveTo.isComplete() && !moveBack.isComplete())
+      return moveBack.getDescript();
+    else
+      return text_job_wait;
+  }
+  public void update () {
+    if (move==moveTo) {
+      //переключатель
+      if (!moveTo.isComplete()) 
+        moveTo.update();
+      else
+        move=moveBack;
+    } else if (move==moveBack) {
+      if (!moveBack.isComplete()) {
+        int x = worker.x;
+        int y = worker.y;
+        moveBack.update();
+        moveObject.x=x;
+        moveObject.y=y;
+      } else {
+        moveObject.x=targetObject.x;
+        moveObject.y=targetObject.y;
+      }
+    }
+    if (isComplete()) 
+      moveObject.job=targetObject.job=null;
+  }
+}
 
 class JobList extends ArrayList <Job> {
   public Job getJobFree() {

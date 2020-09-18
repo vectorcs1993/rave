@@ -1,42 +1,59 @@
 import de.bezier.guido.*;
 
-SimpleButton buttonLock, buttonRename, buttonRotate;
+SimpleButton buttonLock, buttonRename, buttonRotate, buttonCreate;
+CheckList tasks;
 
 WindowLabel windowInput;
 SimpleButton getListActors;
-RadioButton menuColony, menuColonyObjects, menuColonyFraction;
+RadioButton menuColony, menuColonyActors, menuColonyFabrics, menuColonyFraction;
 Text textLabel, consoleLabel;
 void createInterface() {
-  Interactive.make( this );
   Interface.level=Interface.id=Interface.GAME;
   textLabel = new Text (391, 182, 400, 400, 0, white, color(60));
   consoleLabel = new Text (world.x_map-world.getCenterWindow(), world.y_map+world.getCenterWindow()+5, world.x_map+world.getCenterWindow()-5, 160, 0, white, black);
   menuColony = new RadioButton (5, 5, width-10, 32, RadioButton.HORIZONTAL);
-  menuColony.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_objects, "getMenuObjects"), 
-    new SimpleRadioButton(text_buildings, ""), 
+  menuColony.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_object, "getMenuObjects"), 
+    new SimpleRadioButton(text_buildings, "getMenuBuildings"), 
     new SimpleRadioButton(text_world, ""), 
-    new SimpleRadioButton(text_fraction, "getMenuFraction"), 
-    new SimpleRadioButton(text_zone, ""), 
+    new SimpleRadioButton(data.label.get("menu_fraction"), "getMenuFraction"), 
+    new SimpleRadioButton(data.label.get("menu_study"), ""), 
     new SimpleRadioButton(text_menu, "")});
-  menuColonyObjects = new RadioButton (391, 42, 405, 128, RadioButton.VERTICAL);
-  menuColonyObjects.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_button_manager, "getObjectManager"), 
-    new SimpleRadioButton(text_info, "getObjectInfo"), 
+  menuColonyActors = new RadioButton (391, 42, 405, 128, RadioButton.VERTICAL);
+  menuColonyActors.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_button_manager, "getObjectManager"), 
+    new SimpleRadioButton(data.label.get("button_info"), "getObjectInfo"), 
     new SimpleRadioButton(text_diagnostic, ""), 
-    new SimpleRadioButton(text_button_tasks, "")});
+    new SimpleRadioButton(text_skills, "getObjectTasks")});
+  menuColonyFabrics = new RadioButton (391, 42, 405, 96, RadioButton.VERTICAL);
+  menuColonyFabrics.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_button_manager, "getObjectManager"), 
+    new SimpleRadioButton(data.label.get("button_info"), "getObjectInfo"), 
+    new SimpleRadioButton(data.label.get("button_tasks"), "getFactoryTasks")});
   menuColonyFraction = new RadioButton (391, 42, 405, 128, RadioButton.VERTICAL);
-  menuColonyFraction.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_info, "getFractionInfo"), 
+  menuColonyFraction.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(data.label.get("button_info"), "getFractionInfo"), 
     new SimpleRadioButton(text_job, "getListJobs"), 
     new SimpleRadioButton(text_actors, "getListActors"), 
     new SimpleRadioButton(text_resources, "getListResources")});
+  //чек-бокс для определения функций дронов
+  tasks= new CheckList(410, 200, 200, 350);
+  tasks.add(new CheckBox [] { new CheckBox(text_carry, 410, 220, 10, 10, Job.CARRY, "Переноска предметов"), 
+    new CheckBox( text_maintenance, 410, 250, 10, 10, Job.MAINTENANCE, "Обслуживание объектов"), 
+    new CheckBox( text_mine, 410, 280, 10, 10, Job.MINE, "Добыча ресурсов"), 
+    new CheckBox( text_build, 410, 310, 10, 10, Job.BUILD, "Строительство объектов"), 
+    new CheckBox( text_craft, 410, 340, 10, 10, Job.CRAFT, "Создание предметов"), 
+    new CheckBox( text_guard, 410, 370, 10, 10, Job.GUARD, "Защита территории от врагов")});
+
+  buildings = new Listbox(400, 40, 390, 360, Listbox.OBJECTS);
+  data.loadListBoxFromDBObjects(buildings);
+  items = new Listbox(400, 180, 390, 210, Listbox.ITEMS);
+  data.loadListBoxFromDBItems(items);
 
   windowInput = null;
 
-
-
-
   buttonRename = new SimpleButton(400, 206, 192, 32, text_button_rename, new Runnable() {
     public void run() {
-      windowInput=new WindowLabel(text_input_value+":", (renamed)world.currentRoom.currentObject);
+      //windowInput=new WindowLabel(text_input_value+":", (renamed)world.currentRoom.currentObject);
+      
+
+     
     }
   }
   );
@@ -47,7 +64,6 @@ void createInterface() {
     }
   }
   );
-
   buttonRotate = new SimpleButton(400, 239, 192, 32, text_button_rotate, new Runnable() {
     public void run() {
       rotated object = (rotated)world.currentRoom.currentObject;
@@ -55,42 +71,93 @@ void createInterface() {
     }
   }
   );
+  buttonCreate = new SimpleButton(400, 552, 256, 32, text_button_create, new Runnable() {
+    public void run() {
+      Object object =world.currentRoom.currentObject;
+      if (object instanceof Fabrica) {
+        Fabrica fabrica = (Fabrica)world.currentRoom.currentObject;
+ 
+          fabrica.setProduct(items.select.id, 11);
+          fabrica.getSurpluses();
+     
+      }
+    }
+  }
+  );
 }
+
+
 
 public void drawInterface() {
   buttonLock.setActive(false);
   buttonRename.setActive(false);
   buttonRotate.setActive(false);
-  menuColonyObjects.setActive(false);
+  buttonCreate.setActive(false);
+  menuColonyActors.setActive(false);
+  menuColonyFabrics.setActive(false);
   menuColonyFraction.setActive(false);
+  tasks.setActive(false);
+  buildings.setActive(false);
+  items.setActive(false);
   menuColony.control();
   consoleLabel.draw();
 
+  Object object = world.currentRoom.currentObject;
   if (menuColony.select.event.equals("getMenuObjects")) {
-    menuColonyObjects.setActive(true);
-    menuColonyObjects.control();
-    if (world.currentRoom.currentObject!=null) {
-      if (menuColonyObjects.select.event.equals("getObjectInfo")) {
-        textLabel.draw();
-        textLabel.loadText(world.currentRoom.currentObject.getDescript(), true);
-      } else if (menuColonyObjects.select.event.equals("getObjectManager")) {
-        if (world.currentRoom.currentObject.id==Object.ACTOR || world.currentRoom.currentObject.id==Object.STORAGE) 
-          buttonRename.setActive(true);     
-        if (world.currentRoom.currentObject.id==Object.ITEM)
-          buttonLock.setActive(true);
-        if (world.currentRoom.currentObject instanceof rotated) 
-          buttonRotate.setActive(true);
+    if (object!=null) {
+
+      if (object instanceof Fabrica) {
+        menuColonyFabrics.setActive(true);
+        menuColonyFabrics.control();
+        String event= menuColonyFabrics.select.event;
+        if (event.equals("getObjectInfo")) {
+          textLabel.draw();
+          textLabel.loadText(object.getDescript(), true);
+        } else if (event.equals("getObjectManager")) {
+          if (object instanceof rotated) 
+            buttonRotate.setActive(true);
+        } else if (event.equals("getFactoryTasks")) {
+          items.setActive(true);
+          Fabrica fabrica = (Fabrica)object;
+          String product = text_no;
+          if (fabrica.product!=null) 
+            product=fabrica.product.name+" ("+fabrica.count+")";
+          fill(white);
+          text(text_product+": "+product, 395, 172);
+          if (items.select!=null)
+            buttonCreate.setActive(true);
+        }
+      } else {
+
+        menuColonyActors.setActive(true);
+        menuColonyActors.control();
+        String event= menuColonyActors.select.event;
+        if (event.equals("getObjectInfo")) {
+          textLabel.draw();
+          textLabel.loadText(object.getDescript(), true);
+        } else if (event.equals("getObjectManager")) {
+          if (object.id==Object.ACTOR || object instanceof Storage) 
+            buttonRename.setActive(true);     
+          if (object.id==Object.ITEM)
+            buttonLock.setActive(true);
+          if (object instanceof rotated) 
+            buttonRotate.setActive(true);
+        } else if (event.equals("getObjectTasks")) {
+          if (object instanceof Actor) {
+            tasks.setActive(true);
+            tasks.synhronizedSkills((Actor)object);
+          }
+        }
       }
     } else {
-      textLabel.draw();
-      textLabel.loadText(text_selected_objects, false);
+      text(text_selected_objects, 408, 80);
     }
   } else if (menuColony.select.event.equals("getMenuFraction")) {
     menuColonyFraction.setActive(true);
     menuColonyFraction.control();
     String text="";
     if (menuColonyFraction.select.event.equals("getFractionInfo")) {
-      text = text_nikname+": "+ playerFraction.name+"\n"+
+      text = text_name+": "+ playerFraction.name+"\n"+
         text_count_actors+": "+world.currentRoom.objects.getActorList().size()+"\n"+
         text_free_droids+": "+world.currentRoom.objects.getActorListJobFree().size()+"\n";
       textLabel.loadText(text, true);
@@ -116,9 +183,15 @@ public void drawInterface() {
       textLabel.loadText(text, true);
     }
     textLabel.draw();
+  } else if (menuColony.select.event.equals("getMenuBuildings")) {
+    buildings.setActive(true);
+    if (buildings.select!=null && world.hover && world.isOverMap()) {
+      world.newObj = data.objects.getObjectDatabase(buildings.select.id);
+    }
   }
+
   if (windowInput!=null)
-    windowInput.control();
+    windowInput.setActive(true);
 }
 
 
@@ -191,7 +264,7 @@ abstract class ObjectGui implements mouseOvered {
   }
 
   public boolean isMouseOver() {
-    if (mouseButton!=RIGHT && world.isPermissionInput() && (mouseX>=x && mouseX<x+widthObj) && (mouseY>=y && mouseY<y+heightObj))
+    if (mouseButton!=RIGHT && world.isAllowInput() && (mouseX>=x && mouseX<x+widthObj) && (mouseY>=y && mouseY<y+heightObj))
       return true;
     else 
     return false;
@@ -366,18 +439,19 @@ class Text extends ObjectGui implements scrollable {
 }
 
 
-class WindowLabel {
+class WindowLabel extends ActiveElement {
   String message, input;
   renamed object;
   SimpleButton buttonOk;
 
   WindowLabel (String message, renamed object) {
+    super(200, 100, 400, 300);
     this.message=message;
     this.object=object;
     this.input=object.getName();
     world.input=false;
     world.pause=true;
-    buttonOk = new SimpleButton(100, 150, 128, 32, "Ok", new Runnable() {
+    buttonOk = new SimpleButton(365, 150, 128, 32, "Ok", new Runnable() {
       public void run() {
         windowInput.close();
         windowInput=null;
@@ -392,19 +466,15 @@ class WindowLabel {
     buttonOk.setActive(false);
     buttonOk=null;
   }
-  void control() {
-    pushMatrix();
-    pushStyle();
-    rectMode(CENTER);
-    translate(width/2, height/2);
+  void draw() {
+
     fill(black);
-    rect(0, 0, 400, 300);
+    rect(x, y, width, height);
     fill(white);
-    text(message, -150, -100);
+    text(message, 0, -100);
     text(">"+input+"<", -150, -50);
-    popStyle();
-    popMatrix();
-    buttonOk.setActive(true);
+
+    //buttonOk.setActive(true);
   }
 }
 
@@ -456,5 +526,109 @@ class SimpleRadioButton extends SimpleButton {
   void mouseClicked () {
     if (mouseButton==LEFT)
       on=!on;
+  }
+}
+
+class CheckList extends ActiveElement {
+  ArrayList <CheckBox> list; 
+  CheckList (float xx, float yy, float ww, float hh ) {
+    super(xx, yy, ww, hh);
+    list = new ArrayList <CheckBox>();
+  }
+  public void add(CheckBox [] list) {
+    for (CheckBox part : list)
+      this.list.add(part);
+  }
+  public void setActive(boolean active) {
+    for (CheckBox part : list)
+      part.setActive(active);
+  }
+  public void draw() {
+    if (hover) {
+      for (CheckBox part : list) {
+        if (part.hover) {
+          fill(white);
+          text(part.getDescript(), x, y+height+20);
+          break;
+        }
+      }
+    }
+  }
+
+  void mouseReleased () {
+    Object object = world.currentRoom.currentObject;
+    if (object!=null) {
+      if (object instanceof Actor) {
+        Actor actor = (Actor)object;
+        actor.skills.clear();
+        for (CheckBox part : list) {
+          if (part.pressed)
+            part.mouseReleased();
+          if (part.checked) 
+            actor.skills.append(part.id);
+        }
+
+        synhronizedSkills(actor);
+      }
+    }
+  }
+
+  void mouseHover() {
+  }
+
+
+  public void synhronizedSkills(Actor actor) {
+    for (CheckBox part : list) {
+      part.checked=false;
+      for (int i : actor.skills) {
+        if (part.id==i) {
+          part.checked=true;
+          break;
+        }
+      }
+    }
+  }
+}
+public class CheckBox extends ActiveElement {
+  int id;
+  boolean checked;
+  float x, y, width, height;
+  String label, descript;
+  float padx = 7;
+
+  CheckBox ( String l, float xx, float yy, float ww, float hh, int id, String descript) {
+    super(xx, yy, ww, hh);
+    label = l;
+    x = xx; 
+    y = yy; 
+    width = ww; 
+    height = hh;
+    this.id=id;
+    this.descript=descript;
+    Interactive.add( this );
+  }
+  public String getDescript() {
+    return descript;
+  }
+  void mouseReleased () {
+    checked = !checked;
+  }
+  void draw () {
+    noStroke();
+    fill( 200 );
+    rect( x, y, width, height );
+    if ( checked ) {
+      fill(black);
+      rect( x+2, y+2, width-4, height-4 );
+    } 
+    if (hover)
+      fill(gray);
+    else
+      fill(white);
+    textAlign( LEFT );
+    text(label, x+width+padx, y+height );
+  }
+  boolean isInside ( float mx, float my ) {
+    return Interactive.insideRect( x, y, width+padx+textWidth(label), height, mx, my );
   }
 }

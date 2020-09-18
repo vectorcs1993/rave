@@ -173,7 +173,7 @@ class JobSupport extends Job {   //работа по техническому о
     super(); 
     object = support;
     this.support = new JobSupportPrimary(type, support);
-    moveTo = new JobMove (world.currentRoom.node[getPlace(support.x, support.y, support.direction)[0]][getPlace(support.x, support.y, support.direction)[1]]);
+    moveTo = new JobMove (world.currentRoom.node[world.getPlace(support.x, support.y, support.direction)[0]][world.getPlace(support.x, support.y, support.direction)[1]]);
     name = getNameDatabase();
   }
   public void setWorker(Actor worker) {
@@ -199,7 +199,7 @@ class JobSupport extends Job {   //работа по техническому о
       return text_job_wait;
   }
   public void update () {
-    moveTo.target=world.currentRoom.node[getPlace(object.x, object.y, object.direction)[0]][getPlace(object.x, object.y, object.direction)[1]];
+    moveTo.target=world.currentRoom.node[world.getPlace(object.x, object.y, object.direction)[0]][world.getPlace(object.x, object.y, object.direction)[1]];
     if (!moveTo.isComplete()) 
       moveTo.update();
     else {
@@ -342,17 +342,15 @@ class JobBuild extends Job {   //работа по строительству о
   }
 }
 
-
-
-
 class JobCraft extends Job {   //работа по созданию предмета
   JobCraftPrimary craft;
   JobMove moveTo;
 
-  JobCraft (ItemProjectMap object) {
+  JobCraft (Bench bench) {
     super(); 
-    this.craft = new JobCraftPrimary(object);
-    moveTo = new JobMove (getNeighboring(world.currentRoom.node[object.x][object.y], world.currentRoom.node[object.x][object.y]).get(0));
+    this.craft = new JobCraftPrimary(bench);
+    int [] stand = world.getPlace(bench.x, bench.y, bench.direction); 
+    moveTo = new JobMove (world.currentRoom.node[stand[0]][stand[1]]);
     name = getNameDatabase();
   }
   public boolean isComplete() {
@@ -362,10 +360,10 @@ class JobCraft extends Job {   //работа по созданию предме
       return false;
   }
   protected String getNameDatabase() {
-    return text_job_build;
+    return text_job_craft;
   }
   public void setWorker(Actor worker) {
-    craft.object.job=this;
+    craft.bench.job=this;
     super.setWorker(worker);
     moveTo.setWorker(worker);
     craft.setWorker(worker);
@@ -382,7 +380,7 @@ class JobCraft extends Job {   //работа по созданию предме
     if (!moveTo.isComplete())  
       moveTo.update();
     else {
-      worker.setDirection(craft.object.x, craft.object.y);
+      worker.setDirection(craft.bench.x, craft.bench.y);
       if (!craft.isComplete())  
         craft.update();
     }

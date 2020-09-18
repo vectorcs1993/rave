@@ -185,13 +185,13 @@ boolean getApplyDiagonalMove (int x, int y, int curX, int curY) {   //функц
   return true;
 }
 
-
-
-
-
 GraphList getNeighboring(Graph objectThis, Graph target) {
   GraphList tempList = new GraphList();
-  int [] neighbor = getArrayDirection(objectThis.x, objectThis.y, target.x, target.y);
+  int [] neighbor;
+  if (target!=null)
+    neighbor = getArrayDirection(objectThis.x, objectThis.y, target.x, target.y);
+  else 
+    neighbor=new int [] {59, 48, 70, 49, 71, 50, 72, 61};
   for (int i=0; i<neighbor.length; i++) {
     int tempX=constrain(objectThis.x+matrixShearch[neighbor[i]][0], 0, world.getSize()-1);
     int tempY=constrain(objectThis.y+matrixShearch[neighbor[i]][1], 0, world.getSize()-1);
@@ -249,14 +249,3 @@ GraphList getReconstructPath(Graph start) {
 int getPercent(int v1, int v2, int vMax) {
   return (v1*vMax)/v2;
 }
-
-  int [] getPlace(int x, int y, int direction) {
-    if (direction==0)
-      return new int [] {x, y-1};
-    else if (direction==1)
-      return new int [] {x+1, y};
-    else if (direction==2)
-      return new int [] {x, y+1};
-    else 
-    return new int [] {x-1, y};
-  }

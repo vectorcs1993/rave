@@ -47,14 +47,14 @@ class Fraction {
           }
         } 
         if (droid.skills.hasValue(Job.MAINTENANCE)) { //работа по техническому обслуживанию построек
-          Object objectDamage = world.currentRoom.getObjectsNoItems().getObjectsPermissionRepair().getObjectDamaged();
+          Object objectDamage = world.currentRoom.getObjectsNoItems().getObjectsAllowRepair().getObjectDamaged();
           if (objectDamage!=null) {
             droid.addJob(new JobMaintenance(objectDamage));
             continue;
           }
         } 
         if (droid.skills.hasValue(Job.MINE)) {  //работа по добыче ресурсов
-          ObjectList objectsMine = world.currentRoom.objects.getEnviroments().getObjectsPermissionMine();
+          ObjectList objectsMine = world.currentRoom.objects.getEnviroments().getObjectsAllowMine();
           if (!objectsMine.isEmpty()) {
             Object objectMine=objectsMine.getNearestObject(droid.x, droid.y);
             droid.addJob(new JobMine((Enviroment)objectMine));
@@ -62,21 +62,26 @@ class Fraction {
           }
         } 
         if (droid.skills.hasValue(Job.BUILD)) {  //работа по созданию построек
-          if (!(world.currentRoom.objects.getObjectsBuild().isEmpty())) {
-            Object objectBuild = world.currentRoom.objects.getObjectsBuild().get(0);
+          if (!(world.currentRoom.buildings.isEmpty())) {
+            Object objectBuild = world.currentRoom.buildings.getObjectsAllowBuild().getNearestObject(droid.x, droid.y);
             if (objectBuild!=null) {
-              if (((Build)objectBuild).isPermissionBuild()) {
-                droid.addJob(new JobBuild((Build)objectBuild));
-                continue;
-              }
+              droid.addJob(new JobBuild((Build)objectBuild));
+              continue;
             }
           }
-        } 
+        }
+        if (droid.skills.hasValue(Job.CRAFT)) {
+          Object objectBench = world.currentRoom.objects.getObjectFreeBench();
+          if (objectBench!=null) {
+            droid.addJob(new JobCraft((Bench)objectBench));
+            continue;
+          }
+        }
         if (droid.skills.hasValue(Job.CARRY)) { //работа по переноске предметов
-          ObjectList objectsBuild = world.currentRoom.objects.getObjectsBuild();  //поиск объекта незавершенной постройки
+          ObjectList objectsBuild = world.currentRoom.buildings;  //поиск объекта незавершенной постройки
           for (Object object : objectsBuild) {
             Build objectBuild = (Build)object;
-            if (!objectBuild.isPermissionBuild()) { //проверяем нужны ли ей ресурсы, если да, то
+            if (!objectBuild.isAllowBuild() && objectBuild.job==null) { //проверяем нужны ли ей ресурсы, если да, то
               Item itemCarry=null;  //инициализируем объект предмет
               Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
               int needId = -1;
@@ -108,7 +113,7 @@ class Fraction {
             Fabrica objectFabrica = (Fabrica)object;
 
             if (objectFabrica.product!=null) { //проверяем запущено ли производство предметов, если да, то
-              //  if (!objectFabrica.isPermissionCreate()) {
+              //  if (!objectFabrica.isAllowCreate()) {
               Item itemCarry=null;  //инициализируем объект предмет
               Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
               int needId = -1;
@@ -130,7 +135,6 @@ class Fraction {
                   break;
                 }
               }
-              //}
             }
           }
           if (droid.job!=null) //если работа определена то
