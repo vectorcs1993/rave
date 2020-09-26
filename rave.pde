@@ -1,7 +1,6 @@
 
 
-
-String username;
+PApplet parent = this;
 Actor d1, d2, d3, d4, d5, d6;
 PImage tile, droid, product, none;
 String time = "";
@@ -13,8 +12,6 @@ void settings() {
   size(800, 600, P2D);
   smooth(2);
   PJOGL.setIcon("data/sprites/icon.png");
-
-  
 }
 
 
@@ -25,12 +22,18 @@ void setup() {
   textFont(Interface.font = createFont("data/font/progress_pixel_bolt.ttf", 18));
   textLeading(24);
   strokeCap(SQUARE);
+  
+   
+
+
+  
   setupDatabase();
   tile = loadImage("data/sprites/tile_grass.png");
   none = loadImage("data/sprites/no_data.png");
   droid = loadImage("data/sprites/droid.png");
   product = loadImage("data/sprites/item_product.png");
   playerFraction = new Fraction (0, "Robocraft");
+
   world = new World(5, 42, 12, 24, 32);
   world.getRoomCurrent().add(new Layer(Object.LAYER_STEEL, Item.PLATE_STEEL, 7, 8, 0));
   world.getRoomCurrent().add(new Wall(Object.WALL_STEEL, 0, 8, 8, 0));
@@ -53,13 +56,14 @@ void setup() {
   world.getRoomCurrent().add(new Flag(Object.POINT_STAND, 21, 10));
   world.getRoomCurrent().add(new Wall(Object.WALL_STEEL, 0, 20, 9, 0));
   world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 0, 0, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 6, 12, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 7, 12, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE_WOOD, Item.STEEL, 21, 7, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 9, 12, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 18, 12, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 20, 20, 0));
-  world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 4, 20, 0));
+ //  world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 6, 12, 0));
+ //  world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 7, 12, 0));
+ //  world.getRoomCurrent().add(new Storage(Object.STORAGE_WOOD, Item.STEEL, 21, 7, 0));
+ // world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 9, 12, 0));
+  // world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 18, 12, 0));
+ // world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 20, 20, 0));
+   world.getRoomCurrent().add(new Storage(Object.STORAGE_STEEL, Item.STEEL, 4, 20, 0));
+   world.getRoomCurrent().addItemOrder(4,20,3,1,true);
   world.getRoomCurrent().add(new Miner(Object.WELL, 6, 6, 0));
   world.getRoomCurrent().add(new Miner(Object.DRILL, 7, 6, 0));
   world.getRoomCurrent().add(new Miner(Object.DRILL, 9, 6, 0));
@@ -127,9 +131,7 @@ void setup() {
 void draw() {
   background(0);
   world.update();
- world.draw();
   drawInterface();
-
 }
 
 void keyPressed() {
@@ -142,7 +144,6 @@ void keyPressed() {
       }
     } else if (keyCode==9) {
       world.showStatus=!world.showStatus;
- 
     }
   } else {
     if (windowInput!=null) {

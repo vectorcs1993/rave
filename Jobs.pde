@@ -111,15 +111,19 @@ class JobPutItemMap extends Job {
 
   protected void action() {
     for (int i=0; i<worker.carryingCapacity; i++) {
-      worker.items.add(itemMap.item);
-      itemMap.count--;
-      if (itemMap.count<=0) {
-        world.currentRoom.remove(itemMap);
+      if (worker.items.getWeight()+itemMap.item.weight<=worker.carryingCapacity) {
+        worker.items.add(itemMap.item);
+        itemMap.count--;
+        if (itemMap.count<=0) {
+          world.currentRoom.remove(itemMap);
+          break;
+        }
+      } else
         break;
-      }
     }
     itemMap.job=null;
   }
+
   public void update() {
     super.update();
     if (process<processMax) {
@@ -163,10 +167,13 @@ class JobPutItem extends Job {
   protected void action() {
     if (object instanceof Storage) {
       for (int i=0; i<worker.carryingCapacity; i++) {
-        worker.items.add(item);
-        ((Storage)object).items.remove(item);
+        if (worker.items.getWeight()+item.weight<=worker.carryingCapacity) {
+          worker.items.add(item);
+          ((Storage)object).items.remove(item);
+        } else
+          break;
       }
-    }
+    } 
     object.job=null;
   }
 
@@ -184,11 +191,11 @@ class JobPutItem extends Job {
 
 
 class JobGetItemMap extends JobPutItemMap {   //работа по выгрузке предмета 
-  Storage storage;
+  Object object;
 
-  JobGetItemMap(Storage storage, ItemMap itemMap) {
+  JobGetItemMap(Object object, ItemMap itemMap) {
     super(itemMap);
-    this.storage=storage;
+    this.object=object;
   }
 
   protected String getNameDatabase() {
@@ -197,28 +204,15 @@ class JobGetItemMap extends JobPutItemMap {   //работа по выгрузк
   public void update() {
     super.update();
     if (!isComplete())
-      worker.setDirection(storage.x, storage.y);
+      worker.setDirection(object.x, object.y);
   }
 
   protected void action() {
-    int freeCapacity = storage.getFreeCapacity();
     Item newItem = itemMap.item;
     int countItemWorker = worker.items.calculationItem(newItem.id);
-    for (int i=0; i<countItemWorker; i++) {
-      worker.items.removeItemCount(newItem, 1);
-      if (i<freeCapacity) 
-        storage.items.add(newItem);
-      else {
-        world.currentRoom.addItemOrder(worker.x, worker.y, newItem.id, 1);
-      }
-    }
-    if (!worker.items.isEmpty()) {
-      for (int i=worker.items.size()-1; i>=0; i--) {
-        Item item = worker.items.get(i);
-        worker.items.removeItemCount(item, 1);
-        world.currentRoom.addItemOrder(worker.x, worker.y, item.id, 1);
-      }
-    }
+    world.currentRoom.addItemOrder(object.x, object.y, newItem.id, countItemWorker, true);
+    worker.items.removeItemCount(newItem, countItemWorker);
+    object.job=null;
   }
 }
 
@@ -239,19 +233,15 @@ class JobGetItem extends JobPutItem {   //работа по выгрузке п�
   }
 
   protected void action() {
-    int count = worker.items.calculationItem(item.id);
-    for (int i=0; i<count; i++) {
-      worker.items.remove(item);
-      if (object instanceof Storage) {
-        ((Storage)object).items.add(item);
-      } else if  (object instanceof Build) {
-        ((Build)object).items.append(item.id);
-      } else if  (object instanceof Fabrica) { 
-        ((Fabrica)object).components.append(item.id);
-      }
-    }
+    int countItemWorker = worker.items.calculationItem(item.id);
+    world.currentRoom.addItemOrder(object.x, object.y, item.id, countItemWorker, true);
+    worker.items.removeItemCount(item, countItemWorker);
     object.job=null;
   }
+ 
+  
+  
+  
 }
 
 class JobPatrol extends Job {   //работа по патрулировании местности

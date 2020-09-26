@@ -1,16 +1,40 @@
 import de.bezier.guido.*;
+Listbox buildings, itemsList;
+SimpleButton buttonLock, buttonRename, buttonRotate, buttonCreate, buttonCreate1, buttonCreate10, buttonCreate100, buttonCancelProduct;
+SimpleRadioButton buttonInfo, 
+  buttonManager, 
+  buttonCargo, 
+  buttonTask, buttonFunctions;
 
-SimpleButton buttonLock, buttonRename, buttonRotate, buttonCreate;
 CheckList tasks;
+
 
 WindowLabel windowInput;
 SimpleButton getListActors;
-RadioButton menuColony, menuColonyActors, menuColonyFabrics, menuColonyFraction;
+RadioButton menuColony, menuColonyActors, menuColonyFabrics, menuColonyItemsMap, menuColonyStorages, menuColonyFraction;
 Text textLabel, consoleLabel;
 void createInterface() {
   Interface.level=Interface.id=Interface.GAME;
+
+  buildings=new Listbox(400, 40, 390, 360, Listbox.OBJECTS);
+  data.loadListBoxFromDBObjects(buildings);
+  itemsList = new Listbox(400, 180, 390, 210, Listbox.ITEMS);
   textLabel = new Text (391, 182, 400, 400, 0, white, color(60));
   consoleLabel = new Text (world.x_map-world.getCenterWindow(), world.y_map+world.getCenterWindow()+5, world.x_map+world.getCenterWindow()-5, 160, 0, white, black);
+  //кнопки
+  buttonInfo = new SimpleRadioButton(data.label.get("button_info"), "getInfo"); 
+  buttonManager=new SimpleRadioButton(data.label.get("button_manager"), "getManager");
+  buttonCargo=new SimpleRadioButton(data.label.get("button_cargo"), "getCargo");
+  buttonTask=new SimpleRadioButton(data.label.get("button_tasks"), "getTasks", new Runnable() { 
+    public void run() {
+      Fabrica fabrica = (Fabrica) world.currentRoom.currentObject;
+      if (fabrica.products!=null)
+      data.loadListBoxFromDBProducts(itemsList, fabrica.products);
+    }
+  }
+  );
+  buttonFunctions=new SimpleRadioButton(data.label.get("button_functions"), "getFunctions");
+
   menuColony = new RadioButton (5, 5, width-10, 32, RadioButton.HORIZONTAL);
   menuColony.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_object, "getMenuObjects"), 
     new SimpleRadioButton(text_buildings, "getMenuBuildings"), 
@@ -19,19 +43,18 @@ void createInterface() {
     new SimpleRadioButton(data.label.get("menu_study"), ""), 
     new SimpleRadioButton(text_menu, "")});
   menuColonyActors = new RadioButton (391, 42, 405, 128, RadioButton.VERTICAL);
-  menuColonyActors.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_button_manager, "getObjectManager"), 
-    new SimpleRadioButton(data.label.get("button_info"), "getObjectInfo"), 
-    new SimpleRadioButton(text_diagnostic, ""), 
-    new SimpleRadioButton(text_skills, "getObjectTasks")});
+  menuColonyActors.addButtons(new SimpleRadioButton [] {buttonManager.clone(), buttonInfo.clone(), 
+    new SimpleRadioButton(text_diagnostic, ""), buttonFunctions.clone()});
+  menuColonyStorages=new RadioButton (391, 42, 405, 96, RadioButton.VERTICAL);
+  menuColonyStorages.addButtons(new SimpleRadioButton [] {buttonManager.clone(), buttonInfo.clone(), buttonCargo.clone()});
   menuColonyFabrics = new RadioButton (391, 42, 405, 96, RadioButton.VERTICAL);
-  menuColonyFabrics.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(text_button_manager, "getObjectManager"), 
-    new SimpleRadioButton(data.label.get("button_info"), "getObjectInfo"), 
-    new SimpleRadioButton(data.label.get("button_tasks"), "getFactoryTasks")});
+  menuColonyFabrics.addButtons(new SimpleRadioButton [] {buttonManager.clone(), buttonInfo.clone(), buttonTask.clone()});
+  menuColonyItemsMap = new RadioButton (391, 42, 405, 64, RadioButton.VERTICAL);
+  menuColonyItemsMap.addButtons(new SimpleRadioButton [] {buttonManager.clone(), buttonInfo.clone()});
   menuColonyFraction = new RadioButton (391, 42, 405, 128, RadioButton.VERTICAL);
-  menuColonyFraction.addButtons(new SimpleRadioButton [] {new SimpleRadioButton(data.label.get("button_info"), "getFractionInfo"), 
+  menuColonyFraction.addButtons(new SimpleRadioButton [] { buttonInfo.clone(), 
     new SimpleRadioButton(text_job, "getListJobs"), 
-    new SimpleRadioButton(text_actors, "getListActors"), 
-    new SimpleRadioButton(text_resources, "getListResources")});
+    new SimpleRadioButton(text_actors, "getListActors"), buttonCargo.clone()});
   //чек-бокс для определения функций дронов
   tasks= new CheckList(410, 200, 200, 350);
   tasks.add(new CheckBox [] { new CheckBox(text_carry, 410, 220, 10, 10, Job.CARRY, "Переноска предметов"), 
@@ -41,19 +64,15 @@ void createInterface() {
     new CheckBox( text_craft, 410, 340, 10, 10, Job.CRAFT, "Создание предметов"), 
     new CheckBox( text_guard, 410, 370, 10, 10, Job.GUARD, "Защита территории от врагов")});
 
-  buildings = new Listbox(400, 40, 390, 360, Listbox.OBJECTS);
-  data.loadListBoxFromDBObjects(buildings);
-  items = new Listbox(400, 180, 390, 210, Listbox.ITEMS);
-  data.loadListBoxFromDBItems(items);
+
+
 
   windowInput = null;
 
   buttonRename = new SimpleButton(400, 206, 192, 32, text_button_rename, new Runnable() {
     public void run() {
-      //windowInput=new WindowLabel(text_input_value+":", (renamed)world.currentRoom.currentObject);
-      
 
-     
+      windowInput=new WindowLabel(text_input_value+":", (renamed)world.currentRoom.currentObject);
     }
   }
   );
@@ -69,17 +88,51 @@ void createInterface() {
       rotated object = (rotated)world.currentRoom.currentObject;
       object.setDirectionNext();
     }
-  }
+  } 
   );
   buttonCreate = new SimpleButton(400, 552, 256, 32, text_button_create, new Runnable() {
     public void run() {
       Object object =world.currentRoom.currentObject;
       if (object instanceof Fabrica) {
         Fabrica fabrica = (Fabrica)world.currentRoom.currentObject;
- 
-          fabrica.setProduct(items.select.id, 11);
-          fabrica.getSurpluses();
-     
+        fabrica.setProduct(itemsList.select.id, 1);
+        fabrica.getSurpluses();
+        if (object instanceof Bench) {
+          Bench bench = (Bench)fabrica;
+          if (bench.job!=null)
+          bench.job.worker.job=null;
+          bench.job=null;
+        }
+      }
+    }
+  }
+  );
+  buttonCreate1 = new SimpleButton(592, 552, 64, 32, "+1", new Runnable() {
+    public void run() {
+      Object object =world.currentRoom.currentObject;
+      if (object instanceof Fabrica) {
+        Fabrica fabrica = (Fabrica)world.currentRoom.currentObject;
+        fabrica.count+=1;
+      }
+    }
+  }
+  );
+  buttonCreate10 = new SimpleButton(657, 552, 64, 32, "+10", new Runnable() {
+    public void run() {
+      Object object =world.currentRoom.currentObject;
+      if (object instanceof Fabrica) {
+        Fabrica fabrica = (Fabrica)world.currentRoom.currentObject;
+        fabrica.count+=10;
+      }
+    }
+  }
+  );
+  buttonCancelProduct= new SimpleButton(400, 552, 192, 32, "Отмена", new Runnable() {
+    public void run() {
+      Object object =world.currentRoom.currentObject;
+      if (object instanceof Fabrica) {
+        Fabrica fabrica = (Fabrica)world.currentRoom.currentObject;
+        fabrica.resetProduct();
       }
     }
   }
@@ -93,12 +146,17 @@ public void drawInterface() {
   buttonRename.setActive(false);
   buttonRotate.setActive(false);
   buttonCreate.setActive(false);
+  buttonCreate1.setActive(false);
+  buttonCreate10.setActive(false);
+  buttonCancelProduct.setActive(false);
   menuColonyActors.setActive(false);
+  menuColonyStorages.setActive(false);
   menuColonyFabrics.setActive(false);
   menuColonyFraction.setActive(false);
+  menuColonyItemsMap.setActive(false);
   tasks.setActive(false);
   buildings.setActive(false);
-  items.setActive(false);
+  itemsList.setActive(false);
   menuColony.control();
   consoleLabel.draw();
 
@@ -110,39 +168,78 @@ public void drawInterface() {
         menuColonyFabrics.setActive(true);
         menuColonyFabrics.control();
         String event= menuColonyFabrics.select.event;
-        if (event.equals("getObjectInfo")) {
+        if (event.equals("getInfo")) {
           textLabel.draw();
           textLabel.loadText(object.getDescript(), true);
-        } else if (event.equals("getObjectManager")) {
+        } else if (event.equals("getManager")) {
           if (object instanceof rotated) 
             buttonRotate.setActive(true);
-        } else if (event.equals("getFactoryTasks")) {
-          items.setActive(true);
+        } else if (event.equals("getTasks")) {
           Fabrica fabrica = (Fabrica)object;
+          if (fabrica.products!=null) 
+            itemsList.setActive(true);
+          else 
+          return;
           String product = text_no;
           if (fabrica.product!=null) 
             product=fabrica.product.name+" ("+fabrica.count+")";
           fill(white);
           text(text_product+": "+product, 395, 172);
-          if (items.select!=null)
+
+          if (itemsList.select!=null) {
+            if (fabrica.product!=null) {
+              if (fabrica instanceof Bench) 
+                 buttonCancelProduct.setActive(true);
+              else {
+                if (fabrica.product.id!=itemsList.select.id)
+                  buttonCreate.setActive(true);
+                else {
+                   buttonCancelProduct.setActive(true);
+                  buttonCreate1.setActive(true);
+                  buttonCreate10.setActive(true);
+                }
+              }
+            } else 
             buttonCreate.setActive(true);
+          }
+        }
+      } else if (object instanceof Storage) {
+        menuColonyStorages.setActive(true);
+        menuColonyStorages.control();
+        String event= menuColonyStorages.select.event;
+        if (event.equals("getManager")) {
+          if (object instanceof rotated) 
+            buttonRotate.setActive(true);
+        } else if (event.equals("getInfo")) {
+          textLabel.draw();
+          textLabel.loadText(object.getDescript(), true);
+        } else if (event.equals("getCargo")) {
+          textLabel.draw();
+          textLabel.loadText(((Storage)object).getDescriptStorage(), true);
+        }
+      } else if (object instanceof ItemMap) {
+        menuColonyItemsMap.setActive(true);
+        menuColonyItemsMap.control();
+        String event= menuColonyItemsMap.select.event;
+        if (event.equals("getManager")) 
+          buttonLock.setActive(true);
+        else if (event.equals("getInfo")) {
+          textLabel.draw();
+          textLabel.loadText(object.getDescript(), true);
         }
       } else {
-
         menuColonyActors.setActive(true);
         menuColonyActors.control();
         String event= menuColonyActors.select.event;
-        if (event.equals("getObjectInfo")) {
+        if (event.equals("getInfo")) {
           textLabel.draw();
           textLabel.loadText(object.getDescript(), true);
-        } else if (event.equals("getObjectManager")) {
+        } else if (event.equals("getManager")) {
           if (object.id==Object.ACTOR || object instanceof Storage) 
             buttonRename.setActive(true);     
-          if (object.id==Object.ITEM)
-            buttonLock.setActive(true);
           if (object instanceof rotated) 
             buttonRotate.setActive(true);
-        } else if (event.equals("getObjectTasks")) {
+        } else if (event.equals("getFunctions")) {
           if (object instanceof Actor) {
             tasks.setActive(true);
             tasks.synhronizedSkills((Actor)object);
@@ -156,7 +253,7 @@ public void drawInterface() {
     menuColonyFraction.setActive(true);
     menuColonyFraction.control();
     String text="";
-    if (menuColonyFraction.select.event.equals("getFractionInfo")) {
+    if (menuColonyFraction.select.event.equals("getInfo")) {
       text = text_name+": "+ playerFraction.name+"\n"+
         text_count_actors+": "+world.currentRoom.objects.getActorList().size()+"\n"+
         text_free_droids+": "+world.currentRoom.objects.getActorListJobFree().size()+"\n";
@@ -171,7 +268,7 @@ public void drawInterface() {
         textLabel.loadText(text_empty, false);
       else
         textLabel.loadText(text, true);
-    } else if (menuColonyFraction.select.event.equals("getListResources")) {
+    } else if (menuColonyFraction.select.event.equals("getCargo")) {
       text=world.currentRoom.getItemsList().getNames();
       if (text.isEmpty())
         textLabel.loadText(text_empty, true);
@@ -213,6 +310,7 @@ static class Interface {
   static public PFont font;
   static final public int GAME=0, PAUSE=1, INPUT=2; 
 
+
   static public int getNewId() {
     id++; 
     return id;
@@ -246,6 +344,7 @@ static class Interface {
 
 abstract class ObjectGui implements mouseOvered {
   protected int x, y, level, id, widthObj, heightObj;
+  protected Listbox buildings, items;
   ObjectGui (int x, int y, int widthObj, int  heightObj, int level) {
     this.x=x;
     this.y=y;
@@ -290,6 +389,7 @@ class RadioButton extends ActiveElement {
   RadioButton  (int x, int y, int widthObj, int  heightObj, int orientation) {
     super(x, y, widthObj, heightObj);
     this.orientation = constrain(orientation, 0, 1);
+    select=null;
   }
 
   public void addButton(SimpleRadioButton button) {
@@ -404,11 +504,7 @@ class Text extends ObjectGui implements scrollable {
   }
 
   protected void draw() {
-    pushStyle();
-    strokeWeight(1);
-    stroke(text_color);
-    fill(background_color);
-    rect(x, y, widthObj, heightObj);
+    pushStyle(); 
     fill(text_color);
     textLeading(grid_size);
     clip(x, y, widthObj+1, heightObj+1);
@@ -445,13 +541,13 @@ class WindowLabel extends ActiveElement {
   SimpleButton buttonOk;
 
   WindowLabel (String message, renamed object) {
-    super(200, 100, 400, 300);
+    super(40, 130, 300, 200);
     this.message=message;
     this.object=object;
     this.input=object.getName();
     world.input=false;
     world.pause=true;
-    buttonOk = new SimpleButton(365, 150, 128, 32, "Ok", new Runnable() {
+    buttonOk = new SimpleButton(x+50, 150, 128, 32, "Ok", new Runnable() {
       public void run() {
         windowInput.close();
         windowInput=null;
@@ -465,16 +561,14 @@ class WindowLabel extends ActiveElement {
     object.setName(input);
     buttonOk.setActive(false);
     buttonOk=null;
+    setActive(false);
   }
   void draw() {
-
     fill(black);
     rect(x, y, width, height);
     fill(white);
     text(message, 0, -100);
     text(">"+input+"<", -150, -50);
-
-    //buttonOk.setActive(true);
   }
 }
 
@@ -489,27 +583,25 @@ class SimpleButton extends ActiveElement {
     this.text=text;
     this.script=script;
   }
-
   void mousePressed () {
     if (script!=null)
       script.run();
   }
-
   void draw () {
     pushStyle();
-    if ( hover )    
+    if (hover)    
       if (mousePressed ) 
         stroke(color(90));
       else 
       stroke(white);
     else noStroke();
     if ( on ) fill( white );
-    else fill( color(60));
+    else fill(black);
     rect(x, y, width, height);
     strokeWeight(1);
     textAlign(CENTER, CENTER);
-    if ( on ) fill( color(60) );
-    else fill( white);
+    if ( on ) fill(black);
+    else fill(white);
     textSize(18);
     text(text, x+this.width/2, y+this.height/2-textDescent());
     popStyle();
@@ -519,13 +611,20 @@ class SimpleButton extends ActiveElement {
 class SimpleRadioButton extends SimpleButton {
   String event;
 
+  SimpleRadioButton (String text, String event, Runnable script) {
+    this(text, event);
+    this.script=script;
+  }
   SimpleRadioButton (String text, String event) {
-    super(133, 9, 1, 1, text, null);  
+    super(-600, -600, 1, 1, text, null);  
     this.event=event;
   }
   void mouseClicked () {
     if (mouseButton==LEFT)
       on=!on;
+  }
+  public SimpleRadioButton clone() {
+    return new SimpleRadioButton (text, event, script);
   }
 }
 

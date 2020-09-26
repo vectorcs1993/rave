@@ -259,7 +259,7 @@ class Layer extends Object implements rotated {
   }
 }
 
-class Flag extends Object implements rotated {
+class Flag extends Object {
   protected Actor user;
 
   Flag (int id, int x, int y) {
@@ -319,7 +319,7 @@ class Enviroment extends Object {
   }
   protected void delete() {
     super.delete();
-    world.currentRoom.addItemOrder(x, y, product.id, count);
+    world.currentRoom.addItemOrder(x, y, product.id, count, true);
   }
   protected void endDraw() {
     super.endDraw();
@@ -388,7 +388,7 @@ class ItemMap extends Object {
   public void update() {
     if (count>item.stack) {
       int adj = count-item.stack;
-      world.currentRoom.addItemOrder(x, y, item.id, adj);
+      world.currentRoom.addItemOrder(x, y, item.id, adj, true);
       count-= adj;
     }
   }
@@ -446,9 +446,8 @@ class Storage extends Wall implements renamed {
       items.add(item);
   }
 
-  protected String getDescript() {
-    return super.getDescript()+
-      text_capacity+": "+getCapacity()+"/"+capacity+"\n"+
+  protected String getDescriptStorage() {
+    return text_capacity+": "+getCapacity()+"/"+capacity+"\n"+
       text_items+": "+items.getNames();
   }
 
@@ -464,11 +463,17 @@ class Storage extends Wall implements renamed {
 class Fabrica extends Miner {
   protected ItemIntList components;
   protected ItemIntList reciept;
+  protected ItemIntList products;
 
   Fabrica(int id, int x, int y, int direction) {
     super(id, x, y, direction);
-    setProduct(Item.BLOCK_STONE, 10);
+    // setProduct(Item.BLOCK_STONE, 10);
     components = new ItemIntList();
+    products = new ItemIntList();
+    products =  getProductsDatabase();
+    reciept = new ItemIntList();
+    product=null;
+    count=progress=0;
   }
   public void setProduct(int id, int count) {
     product = new Item(id);
@@ -477,7 +482,16 @@ class Fabrica extends Miner {
     progressMax = product.getItemProgressMaxDatabase();
     reciept =  product.getRecieptDatabase();
   }
+  public void resetProduct() {
+    product = null;
+    count=progress=0;
+    progressMax = 0;
+    reciept.clear();
+  }
 
+  public ItemIntList  getProductsDatabase() {
+    return data.objects.getObjectDatabase(id).products;
+  }
   public boolean isAllowCreate() {
     for (int part : reciept.sortItem()) {
       if (components.calculationItem(part)<reciept.calculationItem(part)) 
@@ -492,7 +506,19 @@ class Fabrica extends Miner {
     }
     return false;
   }
-
+  protected void endDraw() {
+    popStyle();
+    popMatrix();
+    if (product!=null) {
+      pushMatrix();
+      translate(x*world.grid_size, y*world.grid_size);
+      image(product.sprite, 4, 4, 24, 24);
+      popMatrix();
+    }
+    drawStatus(5, hp, hpMax, green, red);
+    if (product!=null)
+      drawStatus(9, progress, progressMax, yellow, red);
+  }
   protected String getDescript() {
     return text_name+": "+getName()+"\n"+
       text_status+": "+getHpStatus()+"\n"+
@@ -520,9 +546,9 @@ class Fabrica extends Miner {
   }
   public void getSurpluses() {  //выбрасывает излишки предметов перед производством нового изделия
     for (int part : components.sortItem()) {
-      world.currentRoom.addItemOrder(x, y, part, components.calculationItem(part));
+      world.currentRoom.addItemOrder(x, y, part, components.calculationItem(part), false);
     }
-     components.clear();
+    components.clear();
   }
   protected String getStatus() {
     if (product!=null) {
@@ -543,15 +569,16 @@ class Fabrica extends Miner {
       drawIndicator(false);
   }
   protected void placeProduct() {
-    world.getRoomCurrent().addItemOrder(world.getPlace(x, y, direction)[0], world.getPlace(x, y, direction)[1], product.id, product.getOutputDatabase());
+    world.getRoomCurrent().addItemOrder(world.getPlace(x, y, direction)[0], world.getPlace(x, y, direction)[1], product.id, product.getOutputDatabase(), true);
     count--;//=product.getOutputDatabase();
     for (int part : reciept) {
       if (components.hasValue(part))
         components.remove(components.index(part));
     }
     if (count==0)
-      product=null;
+      resetProduct();
   }
+
   public void update() {
     if (product!=null && count>0 && isAllowCreate()) {
       if (isPlace(product.getOutputDatabase())) { 
@@ -571,21 +598,8 @@ class Bench extends Fabrica {
 
   Bench (int id, int x, int y, int direction) {
     super(id, x, y, direction);
-    setProduct(Item.KIT_REPAIR, 5);
   }
-  protected void endDraw() {
-    popStyle();
-    popMatrix();
-    if (product!=null) {
-      pushMatrix();
-      translate(x*world.grid_size, y*world.grid_size);
-      image(product.sprite, 4, 4, 24, 24);
-      popMatrix();
-    }
-    drawStatus(5, hp, hpMax, green, red);
-    if (product!=null)
-      drawStatus(9, progress, progressMax, yellow, red);
-  }
+
   public void drawSelected () {
     super.drawSelected();
     drawPlace(world.getPlace(x, y, direction)[0], world.getPlace(x, y, direction)[1], blue);
@@ -717,7 +731,7 @@ class Miner extends Enviroment implements rotated {
       progress=0;
       if (isPlaceRersource()) {
         int newCount = constrain(count, 1, sector.count);
-        world.getRoomCurrent().addItemOrder(world.getPlace(x, y, direction)[0], world.getPlace(x, y, direction)[1], product.id, newCount);
+        world.getRoomCurrent().addItemOrder(world.getPlace(x, y, direction)[0], world.getPlace(x, y, direction)[1], product.id, newCount, true);
         sector.count-=newCount;
       }
     }
@@ -788,7 +802,7 @@ class Actor extends Object implements renamed {
     energy=energyMax;
     energyLeak=0.01+random(0.09);
     items = new ItemList();
-    carryingCapacity=5;//(int)random(9)+1;
+    carryingCapacity=(int)random(9)+1;
     skills = new IntList ();
   }
   protected String getNameDatabase() {
@@ -1138,7 +1152,7 @@ class Build extends Object {
       int countItem=items.calculationItem(part);
       int countReciept=reciept.calculationItem(part);
       if (countItem>countReciept) 
-        world.currentRoom.addItemOrder(x, y, part, countItem-countReciept);
+        world.currentRoom.addItemOrder(x, y, part, countItem-countReciept, true);
     }
   }
 
@@ -1174,6 +1188,7 @@ class Build extends Object {
   protected void endDraw() {
     super.endDraw();
     drawHealthStatus();
+    drawStatus(8, items.size(), reciept.size(), white, red);
   }
 }
 
@@ -1231,8 +1246,20 @@ class ObjectList extends ArrayList <Object> {
     }
     return null;
   }
-
-
+  public Build getBuild() {
+    for (Object object : this) {
+      if (object instanceof Build) 
+        return (Build) object;
+    }
+    return null;
+  }
+  public Fabrica getFabrica() {
+    for (Object object : this) {
+      if (object instanceof Fabrica) 
+        return (Fabrica) object;
+    }
+    return null;
+  }
   public ObjectList getStorageListFree() {
     ObjectList objects= new ObjectList();
     for (Object object : this) {
@@ -1256,17 +1283,54 @@ class ObjectList extends ArrayList <Object> {
     return null;
   }
 
-  public ObjectList getIsItem(int id) {
+  public ObjectList getIsItem(int id, int weight) {
     ObjectList objects= new ObjectList();
     for (Object object : this) {
       if (object instanceof Storage && object.job==null) {
-        if (((Storage)object).items.calculationItem(id)>0)
-          objects.add(object);
+        if (((Storage)object).items.calculationItem(id)>0) {
+          if (((Storage)object).items.getItem(id).weight<=weight)
+            objects.add(object);
+        }
       }
     }
     return objects;
   }
 
+
+  public ObjectList getObjectsById(int id) {
+    ObjectList objects= new ObjectList();
+    for (Object object : this) {
+      if (object.id==id)
+        objects.add(object);
+    }
+    return objects;
+  }
+  public ObjectList getItemsById(int id) {
+    ObjectList objects= new ObjectList();
+    for (Object object : this) {
+      if (object instanceof ItemMap) {
+        if (((ItemMap)object).item.id==id)
+          objects.add(object);
+      }
+    }
+    return objects;
+  }
+  public Object getItemById(int id) {
+    for (Object object : this) {
+      if (object instanceof ItemMap) {
+        if (((ItemMap)object).item.id==id) 
+          return object;
+      }
+    }
+    return null;
+  }
+  public Object getObjectById(int id) {
+    for (Object object : this) {
+      if (object.id==id) 
+        return object;
+    }
+    return null;
+  }
   public ObjectList getEnviroments() {
     ObjectList objects= new ObjectList();
     for (Object object : this) {
@@ -1370,6 +1434,17 @@ class ObjectList extends ArrayList <Object> {
               items.add(itemMap);
           }
         }
+      }
+    }
+    return items;
+  }
+  public ObjectList getItemAllowWeight(int weight) {
+    ObjectList items = new ObjectList();
+    for (Object object : this) {
+      if (object instanceof ItemMap) {
+        Item item = ((ItemMap)object).item;
+        if (item.weight<=weight)
+          items.add(object);
       }
     }
     return items;

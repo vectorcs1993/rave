@@ -1,4 +1,4 @@
-Listbox buildings, items;
+
 
 class Listbox extends ActiveElement {
   ArrayList <ListItem> items;
@@ -63,32 +63,40 @@ class Listbox extends ActiveElement {
     int pressed=listStartAt + int((my-y)/itemHeight);
     if (pressed<=items.size()-1)
       select = items.get(pressed);
+      else 
+      select=null;
+  }
+  boolean hoverNoSlider() {
+    if (mouseX<x+width-20)
+    return true;
+    else 
+    return false;
   }
   void draw () { 
-    noStroke();
-    fill( 100 );
+    stroke(white);
+    noFill();
     rect(x, y, this.width, this.height);
     if ( items != null ) {
       for ( int i = 0; i < int(this.height/itemHeight) && i < items.size(); i++) {
-        stroke( 80 );
+        stroke(white);
         if (i+listStartAt==items.indexOf(select))
-          fill(gray);
+          fill(white);
         else 
-        fill((i+listStartAt) == hoverItem ? white : black);
+        fill(((i+listStartAt) == hoverItem && hoverNoSlider()) ? white : black);
         rect(x, y + (i*itemHeight), this.width, itemHeight);
         noStroke();
         if (i+listStartAt==items.indexOf(select))
           fill(black);
         else 
-        fill((i+listStartAt) == hoverItem ? black : white);
+        fill(((i+listStartAt) == hoverItem && hoverNoSlider()) ? black : white);
         text(items.get(i+listStartAt).label, x+5, y+(i+1)*itemHeight-5 );
       }
     }
     if (hasSlider) {
-      stroke(80);
-      fill(100);
+      stroke(white);
+      fill(black);
       rect(x+this.width-20, y, 20, this.height);
-      fill(120);
+      fill(white);
       rect(x+this.width-20, valueY, 20, 20);
     }
     if (select!=null) {

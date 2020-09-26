@@ -7,6 +7,7 @@ class Fraction {
   private JobList jobs;
   public int id_job;
 
+
   Fraction (int id, String name) {
     this.id=id;
     this.name=name;
@@ -23,7 +24,20 @@ class Fraction {
 
     jobs.remove(job);
   }
-
+  private int getShearchInItem(IntList items) { //поиск предмета
+    for (int part : items) { 
+        if (world.currentRoom.getItemsList().getItem(part)!=null) 
+          return part;
+    }
+    return -1;
+  }
+   private int getShearchInItemMap(IntList items) { //поиск предмета
+    for (int part : items) { 
+        if (world.currentRoom.items.getItemById(part)!=null) 
+          return part;
+    }
+    return -1;
+  }
   public void update() { 
     ObjectList objectsFraction = world.currentRoom.getObjects(this);
 
@@ -82,17 +96,26 @@ class Fraction {
           for (Object object : objectsBuild) {
             Build objectBuild = (Build)object;
             if (!objectBuild.isAllowBuild() && objectBuild.job==null) { //проверяем нужны ли ей ресурсы, если да, то
-              Item itemCarry=null;  //инициализируем объект предмет
-              Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
-              int needId = -1;
-              for (int part : objectBuild.getNeedItems()) { //поиск предмета в контейнере
-                if (world.currentRoom.getItemsList().getItem(part)!=null) { //если нужный предмет находится в каком либо контейнере, то
-                  needId=part; //переменной needId присваивается значение нужного предмета
-                  break;  //и останавливает поиск
+              int needId=getShearchInItemMap(objectBuild.getNeedItems());        
+              if (needId!=-1) {
+                //поиск незаблокированных предметов доступных до переноски
+                Object objectCarryBuild=null;
+                ObjectList itemsFree = world.currentRoom.items.getItemNoLock().getItemAllowWeight(droid.carryingCapacity).getItemsById(needId);
+                if (!itemsFree.isEmpty()) 
+                  objectCarryBuild=itemsFree.getNearestObject(droid.x, droid.y);
+                if (objectCarryBuild!=null) {
+                  JobCarryItemMap job = new JobCarryItemMap ((ItemMap)objectCarryBuild);
+                  job.setObject(objectBuild);
+                  droid.addJob(job);
+                  break;
                 }
               }
+              needId=getShearchInItem(objectBuild.getNeedItems());
               if (needId!=-1) {
-                ObjectList storageIsItem = world.currentRoom.objects.getIsItem(needId); //ищем объект хранилища содержащий предмет
+                //поиск предметов доступных из контейнеров
+                Item itemCarry=null;  //инициализируем объект предмет
+                Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
+                ObjectList storageIsItem = world.currentRoom.objects.getIsItem(needId, droid.carryingCapacity); //ищем объект хранилища содержащий предмет
                 if (!storageIsItem.isEmpty()) { 
                   storageIsItemFree=(Storage)storageIsItem.get(0); //если объект хранилища найден
                   itemCarry=((Storage)storageIsItemFree).items.getItem(needId); //извлекает из него необходимый предмет
@@ -111,20 +134,31 @@ class Fraction {
           ObjectList objectsFabrica = world.currentRoom.objects.getObjectsFreeFabrica();  //поиск объектов фабрик
           for (Object object : objectsFabrica) {
             Fabrica objectFabrica = (Fabrica)object;
-
             if (objectFabrica.product!=null) { //проверяем запущено ли производство предметов, если да, то
-              //  if (!objectFabrica.isAllowCreate()) {
-              Item itemCarry=null;  //инициализируем объект предмет
-              Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
-              int needId = -1;
-              for (int part : objectFabrica.getNeedItems()) { //поиск предмета в контейнере
-                if (world.currentRoom.getItemsList().getItem(part)!=null) { //если нужный предмет находится в каком либо контейнере, то
-                  needId=part; //переменной needId присваивается значение нужного предмета
-                  break;  //и останавливает поиск
+             int needId=getShearchInItemMap(objectFabrica.getNeedItems());
+              if (needId!=-1) {
+                Object objectCarryComponent=null;
+                ObjectList itemsFree = world.currentRoom.items.getItemNoLock().getItemAllowWeight(droid.carryingCapacity).getItemsById(needId);
+                if (!itemsFree.isEmpty()) 
+                  objectCarryComponent=itemsFree.getNearestObject(droid.x, droid.y);
+                if (objectCarryComponent!=null) {  
+                  JobCarryItemMap job = new JobCarryItemMap ((ItemMap)objectCarryComponent);
+                  job.setObject(objectFabrica);
+                  droid.addJob(job);
+                  break;
                 }
               }
+            
+            
+            
+            
+            
+            
+              Item itemCarry=null;  //инициализируем объект предмет
+              Object storageIsItemFree=null; //инициализируем объект хранилище из которого мы намерены взять ресурсы
+              needId = getShearchInItem(objectFabrica.getNeedItems());
               if (needId!=-1) {
-                ObjectList storageIsItem = world.currentRoom.objects.getIsItem(needId); //ищем объект хранилища содержащий предмет
+                ObjectList storageIsItem = world.currentRoom.objects.getIsItem(needId, droid.carryingCapacity); //ищем объект хранилища содержащий предмет
                 if (!storageIsItem.isEmpty()) { 
                   storageIsItemFree=(Storage)storageIsItem.get(0); //если объект хранилища найден
                   itemCarry=((Storage)storageIsItemFree).items.getItem(needId); //извлекает из него необходимый предмет
@@ -141,7 +175,7 @@ class Fraction {
             continue;  //перейти к следующему дрону
           //=========================================если нет работы по перноске предметов к фабрикам и заводам то
           Object objectCarry=null;
-          ObjectList itemsFree = world.currentRoom.items.getItemNoLock();
+          ObjectList itemsFree = world.currentRoom.items.getItemNoLock().getItemAllowWeight(droid.carryingCapacity);
           if (!itemsFree.isEmpty())
             objectCarry=itemsFree.getNearestObject(droid.x, droid.y);
 
@@ -152,7 +186,7 @@ class Fraction {
 
           if (objectCarry!=null && objectStorage!=null) {
             JobCarryItemMap job = new JobCarryItemMap ((ItemMap)objectCarry);
-            job.setStorage((Storage)objectStorage);
+            job.setObject(objectStorage);
             droid.addJob(job);
             continue;
           }

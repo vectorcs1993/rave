@@ -11,7 +11,7 @@ public final class World extends ActiveElement {
   private int deltaX, deltaY;
   public boolean pause, showStatus, input;
   Database.ObjectData newObj;
-
+  static final int OBJCETS=0, ITEMS=1;
   private World (int x, int y, int size_window, int size, int grid_size) {
     super(x, y, size_window*grid_size, size_window*grid_size);
     tick=50;
@@ -109,9 +109,11 @@ public final class World extends ActiveElement {
             } else if (menuColony.select.event.equals("getMenuBuildings")) {
               if (buildings.select!=null) {
                 Database.ObjectData newObj = data.objects.getObjectDatabase(buildings.select.id);
-                Object newObject = data.getNewObject(_x, _y, newObj);
-                if (newObject!=null)
-                  world.getRoomCurrent().add(new Build(Object.BUILD, newObject));
+                if (currentRoom.isPlaceBuilding(_x, _y)) {
+                  Object newObject = data.getNewObject(_x, _y, newObj);
+                  if (newObject!=null) 
+                    world.getRoomCurrent().add(new Build(Object.BUILD, newObject));
+                }
               }
             }
           } else 
@@ -186,13 +188,19 @@ public final class World extends ActiveElement {
     translate(x_map-getScaleAdj(), y_map-getScaleAdj());
     scale(scale);
     room.draw();
-
     if (!buildings.isActive()) 
       newObj=null;
-    if (newObj!=null) {
+    if (newObj!=null && isOverMap()) {
       pushStyle();
       tint(white, 100);
       newObj.draw();
+      if (!room.isPlaceBuilding(getMouseMapX(), getMouseMapY())) {
+        strokeWeight(3);
+        stroke(red);
+        translate(getMouseMapX()*grid_size, getMouseMapY()*grid_size);
+        line(5, 5, grid_size-5, grid_size-5);
+        line(grid_size-5, 5, 5, grid_size-5);
+      }
       popStyle();
     }
     noClip();
@@ -315,6 +323,7 @@ public class Room {
   private Object currentObject;
   private Graph [][] node;
   private String name; 
+
   Room (int x, int y, int size, int grid_size) {
     this.x=x;
     this.y=y;
@@ -365,11 +374,10 @@ public class Room {
     if (currentObject!=null) 
       currentObject.drawSelected();
   }
-
   public void add(Object object) {
     if (object instanceof Flag)
       flags.add(object);
-    if ((object instanceof Layer) && !(object instanceof Wall)) 
+    else if ((object instanceof Layer) && !(object instanceof Wall)) 
       layers.add(object);
     else if (object instanceof ItemMap) 
       items.add(object);
@@ -378,11 +386,10 @@ public class Room {
     else  
     objects.add(object);
   }
-
   public void remove(Object object) {
     if (object instanceof Flag) 
       flags.remove(object);
-    if (object instanceof Layer && !(object instanceof Wall)) 
+    else if (object instanceof Layer && !(object instanceof Wall)) 
       layers.remove(object);
     else if (object instanceof ItemMap) 
       items.remove(object);
@@ -406,11 +413,6 @@ public class Room {
     }
     return null;
   }
-
-
-
-
-
 
   public ArrayList <listened> getActorsList() {
     ArrayList <listened> list = new ArrayList <listened> ();
@@ -447,8 +449,6 @@ public class Room {
     }
     return list;
   }
-
-
   public ArrayList <listened> getFabricsList() {
     ArrayList <listened> list = new ArrayList <listened> ();
     for (Object object : objects) {
@@ -457,27 +457,17 @@ public class Room {
     }
     return list;
   }
-
-  public boolean isPlaceItem(int x, int y, int id, int count) {
-    ObjectList objectsList = getObjectsNoActors(x, y);
-    if (objectsList.isEmpty()) {
-      return true;
-    } else {
-      Storage storage = objectsList.getStorageFree();
-      if (storage!=null)
-        return true;
-      if (node[x][y].solid)
-        return false;
-      for (Object object : objectsList) {
-        if (object instanceof ItemMap) 
-          return true;
-        else if (object.id==Object.LAYER_STEEL || object.id==Object.LAYER_STONE) {
-          return true;
-        }
-      }
+  //метод проверяющий возможность разместить объект на под курсором мыши
+  public boolean isPlaceBuilding(int x, int y) {
+    if (node[x][y].solid)
       return false;
-    }
+    ObjectList objectsList = getObjects(x, y);
+    if (objectsList.isEmpty()) 
+      return true;
+    else 
+    return false;
   }
+
   //метод размещающий предметы на поверхности и возвращающий количество неразмещенных предметов 
   int addItemMap(int x, int y, Item item, int count) {          //размещение объекта с обратным вызовом, возвращает количество предметов которое осталось после размещения
     if (count>item.stack) {                                      //проверяем удается ли разместить все количество count на одной клетке
@@ -493,7 +483,7 @@ public class Room {
   int addItemToStorage(Storage storage, Item item, int count) {    //размещение объекта с обратным вызовом, возвращает количество предметов которое осталось после размещения
     int item_add=0;                                                //инициализация счетчика размещенных предметов
     for (int b=0; b<count; b++) {                                  //цикл соответствующий количеству размещаемых предметов
-      if (storage.isFreeCapacity()) {                              //каждый такт проверка на свободное место в контейнере, если место есть то
+      if (storage.isFreeCapacity(item.weight)) {                              //каждый такт проверка на свободное место в контейнере, если место есть то
         storage.add(new Item(item.id));                            //размещаем предмет  
         item_add++;                                                //обновляем счетчик размещения  
         if (item_add==count)                                        //проверяет размещены ли все предметы    
@@ -504,11 +494,13 @@ public class Room {
   }
 
 
-  public void addItemOrder(int tx, int ty, int id, int count) {
+  public void addItemOrder(int tx, int ty, int id, int count, boolean first) {
     int ix, iy;
     Item item = new Item(id);
     for (int i=-1; i<121; i++) {  //цикл перебирает все соседник клетки в соответствией с матрицей размещения
-      if (i==-1) { 
+      if (i==-1) {
+        if (!first)
+          continue;
         ix=tx;
         iy=ty;
       } else {
@@ -529,6 +521,8 @@ public class Room {
         }
       } else {                //если клетка не свободна и объекты уже присутствуют
         Storage storage = objects.getStorageFree();      //запрос на свободный контейнер (т.е. в котором достаточно места для размещения хотя бы одной единицы предмета)
+        Build build = objects.getBuild();
+        Fabrica fabrica = objects.getFabrica();
         if (storage!=null) {            //если он обнаружен
           int resultAdd = addItemToStorage(storage, item, count);  //размещает предметы, и запрашивает разместилось ли все количество
           if (resultAdd==0)               //если все предметы успешно разместились 
@@ -537,7 +531,13 @@ public class Room {
             count=resultAdd;          //устанавливает значение count
             continue;            //продолжает поиск что бы разместить оставшиеся предметы
           }
-        } else {              //если контейнер не обнаружен в списке объектов
+        } else if (build!=null) {
+          build.items.addItemCount(item.id, count);      
+          return;
+        } else if (fabrica!=null) {
+          fabrica.components.addItemCount(item.id, count);      
+          return;
+        } else {          //если контейнер не обнаружен в списке объектов     
           if (node[ix][iy].solid)          //если проверка показала что клетка твердая, то
             continue;          //перейти на след. клетку в матрице размещения
           else {              //если клетка не твердая, то
@@ -552,6 +552,8 @@ public class Room {
                 }
               } else if (object instanceof ItemMap) {        //если объект класса ItemMap
                 ItemMap itemMap = (ItemMap)object;        //определяет объект класса ItemMap для работы с ним
+                if (itemMap.item.id!=item.id)
+                  break;
                 int newCount = count+itemMap.count;
                 if (newCount>itemMap.item.stack) {        //проверяем не переполнен ли стэк объекта itemMap, если да, то
                   itemMap.count=itemMap.item.stack;      //устанавливаем значение itemMap.count равным значению стэка вложенного предмета
@@ -561,78 +563,14 @@ public class Room {
                   itemMap.count=newCount;          //устанавливает значение count
                   return;              //продолжает поиск что бы разместить оставшиеся предметы
                 }
-              }
+              } 
             }
           }
         }
       }
     }
   }
-  /*
-  public void addItemOrder(int tx, int ty, Item item0, int count) {
-   int ix, iy;
-   Item item=(Item) item0.clone();
-   for (int i=-1; i<121; i++) {
-   if (i==-1) {
-   ix=tx;
-   iy=ty;
-   } else {
-   ix=tx+matrixShearch[matrixRadius[i]][0];
-   iy=ty+matrixShearch[matrixRadius[i]][1];
-   }
-   if (ix<0 || iy<0)
-   continue;
-   ObjectList objectsList = getObjectsNoActors(ix, iy);
-   if (objectsList.isEmpty()) {
-   addItem(ix, iy, item, count);
-   return;
-   } else {
-   Storage storage = objectsList.getStorageFree();
-   if (storage!=null) {
-   storage.add(item);
-   return;
-   }
-   for (Object object : objectsList) { 
-   if (object instanceof ItemMap) {
-   ItemMap itemMap = (ItemMap)object;
-   if (item.id==itemMap.item.id) {
-   if (itemMap.count>itemMap.item.stack) {
-   count=itemMap.count-itemMap.item.stack;
-   itemMap.count=itemMap.item.stack;
-   continue;
-   }
-   itemMap.count+=count;
-   count=0;
-   return;
-   }
-   } else if (object.id==Object.LAYER_STEEL || object.id==Object.LAYER_STONE) {
-   ItemMap itemMap =  new ItemMap(ix, iy, item, count);
-   items.add(itemMap);
-   return;
-   }
-   }
-   }
-   }
-   }
-   
-   public void addItem(int tx, int ty, Item item, int count) {
-   ObjectList objectsList = getObjectsNoActors(tx, ty);
-   ItemMap itemMap =  new ItemMap(tx, ty, item, count);
-   if (objectsList.isEmpty()) { //если нет ни одного объекта в координатах
-   this.items.add(itemMap);
-   } else {   //если объекты присутствуют
-   for (Object object : objectsList) {
-   if (object instanceof Storage) {
-   ((Storage)object).add(item);
-   break;
-   } else if (object instanceof Layer) {
-   this.items.add(itemMap);
-   break;
-   }
-   }
-   }
-   }
-   */
+
   public ObjectList getAllObjects() {
     ObjectList all = new ObjectList ();
     all.addAll(layers);
@@ -732,6 +670,9 @@ public class Room {
 
   private void setCurrent(Object object) {
     currentObject=object;
+    if (object instanceof Fabrica) {
+      data.loadListBoxFromDBProducts(itemsList, ((Fabrica)object).products);
+    }
   }
 
   public void resetSelect() {

@@ -72,12 +72,12 @@ class JobCarryItemMap extends Job {  //работа по транспортир�
   JobMove move, moveTo, moveBack;
   JobPutItemMap putItem;
   JobGetItemMap getItem;
-  Storage storage;
+  Object object;
   ItemMap itemMap;
 
   JobCarryItemMap(ItemMap itemMap) {
     super();
-    this.storage=null;
+    this.object=null;
     this.itemMap= itemMap;
     move = moveTo = new JobMove (world.currentRoom.node[itemMap.x][itemMap.y]);
     putItem = new JobPutItemMap (itemMap);
@@ -97,21 +97,23 @@ class JobCarryItemMap extends Job {  //работа по транспортир�
       getItem.setWorker(worker);
     }
   }
-  public void setStorage(Storage storage) {
-    this.storage=storage;
+  public void setObject(Object object) {
+    this.object=object;
+    this.object.job=this;
     moveTo = move = null;
     move = moveTo = new JobMove (world.currentRoom.node[itemMap.x][itemMap.y]);
     putItem = null;
     putItem = new JobPutItemMap (itemMap);
     getItem = null;
-    getItem = new JobGetItemMap (storage, itemMap);
+    getItem = new JobGetItemMap (object, itemMap);
     moveBack=null;
-    moveBack = new JobMove (getNeighboring(world.currentRoom.node[storage.x][storage.y], world.currentRoom.node[storage.x][storage.y]).get(0));
-    getItem.storage=storage;
+    moveBack = new JobMove (getNeighboring(world.currentRoom.node[object.x][object.y], world.currentRoom.node[object.x][object.y]).get(0));
+    getItem.object=object;
   }
+  
   private boolean isRunnable() {
     if (moveTo!=null && moveBack!=null && putItem!=null && getItem!=null) 
-      if (putItem.itemMap!= null && getItem.storage!=null)
+      if (putItem.itemMap!= null && getItem.object!=null)
         return true;
       else 
       return false;
@@ -148,7 +150,7 @@ class JobCarryItemMap extends Job {  //работа по транспортир�
   public void update () {
     if (isRunnable()) {
       if (moveBack.target.solid)
-        moveBack.target= getNeighboring(world.currentRoom.node[storage.x][storage.y], world.currentRoom.node[storage.x][storage.y]).get(0);
+        moveBack.target= getNeighboring(world.currentRoom.node[object.x][object.y], world.currentRoom.node[object.x][object.y]).get(0);
       if (!move.isComplete())  
         move.update();
       else {

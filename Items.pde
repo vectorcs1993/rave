@@ -13,7 +13,7 @@ class Item implements cloneable {
     this.id=id;
     name = getNameDatabase();
     sprite= getSpriteDatabase();
-    weight=1;
+    weight=getWeightDatabase();
     stack=getStackDatabase();
     reciept=getRecieptDatabase();
   }
@@ -32,6 +32,9 @@ class Item implements cloneable {
   }
   public String getName() {
     return name;
+  }
+   private int getWeightDatabase() {  //стэк предмета, сколько в одной клетке может находиться одинаковых предметов
+  return data.items.getObjectDatabase(id).weight;
   }
   private int getStackDatabase() {  //стэк предмета, сколько в одной клетке может находиться одинаковых предметов
   return data.items.getObjectDatabase(id).stack;
@@ -92,6 +95,12 @@ class ItemIntList extends IntList {
     }
     return total;
   }
+  public void addItemCount (int id, int count) {
+    if (id!=-1) {
+      for (int i=0; i<count; i++)
+          this.append(id);
+    }
+  }
 }
 
 
@@ -108,6 +117,13 @@ class ItemList extends ArrayList <Item> {
         itemsList.append(part.id);
     }
     return itemsList;
+  }
+  
+  public int getWeight() {
+    int itemsWeight = 0; 
+    for (Item part : this) 
+        itemsWeight+=part.weight;
+    return itemsWeight;
   }
 
   public int calculationItem(int id) {   //пересчет количества одинаковых предметов в списке
@@ -150,7 +166,12 @@ class ItemList extends ArrayList <Item> {
       return names;
     }
   }
-
+  public void addItemCount (Item item, int count) {
+    if (item!=null) {
+      for (int i=0; i<count; i++)
+          this.add(item);
+    }
+  }
 
 
   public void removeItemCount (Item item, int count) {
